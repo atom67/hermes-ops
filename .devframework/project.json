@@ -1,0 +1,15 @@
+{
+  "format": 1,
+  "profile": "generic",
+  "timeout_seconds": 300,
+  "commands": {
+    "build": null,
+    "test": ["{python}", "-B", ".devframework/run_unittest.py", "--start", "tests"],
+    "checks": []
+  },
+  "build_not_applicable": "Interpreted Hermes plugin; no distributable build step",
+  "test_evidence": {
+    "format": "devframework-v1",
+    "max_skipped": 0
+  }
+}

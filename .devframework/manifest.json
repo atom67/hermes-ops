@@ -1,0 +1,172 @@
+{
+  "format": 1,
+  "version": "0.2.1",
+  "parameters": {
+    "name": "Hermes Account Usage Plugin",
+    "count": 1000,
+    "unit": "users",
+    "profile": "generic"
+  },
+  "files": {
+    ".devframework/.gitignore": {
+      "sha256": "3f86669f391f2e30667135ca432c9b479279eee37cad1177e68c1d8bee2bdcf2",
+      "ownership": "framework"
+    },
+    ".devframework/AGENTS_GUIDE.md": {
+      "sha256": "211d6270ee8bd917e0b6e2626ee88dc85a2eca97b644cb3ec317e0b00a259efb",
+      "ownership": "framework"
+    },
+    ".devframework/check.py": {
+      "sha256": "1ca2e5c18f0dffec231bc3de023ae7b98423ad08607d6ade9d6e95bb1daf7f26",
+      "ownership": "framework"
+    },
+    ".devframework/KNOWLEDGE_MAP.md": {
+      "sha256": "62f93a67e951b9cedf92ef6c2047da91f9a894dbd5840a7eca5b916a3f291d05",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/bounded-performance.md": {
+      "sha256": "7df169a08ed89243717e83a367bcba62d917f849b27c4d08ddfecb1dac9855a0",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/configuration.md": {
+      "sha256": "31bdbfb6f677aa1d10a82349d764956f0d8b255a529fa8d4a6ac63d33c9077b5",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/crash-recovery.md": {
+      "sha256": "b0dd49cd7b7ed5b714e2b4870a299fad96da2652775ff6c71e7824f851b614e1",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/entry-point-invariants.md": {
+      "sha256": "0f6764b5e6fc9e3f20ca4121debd78baf391e802c7582766f03c24323700cd0d",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/evolution.md": {
+      "sha256": "029e7bb345ab27cbe66917022d7522dd2fe3d9da81b8edd1b0c815d4f077750f",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/outbox.md": {
+      "sha256": "bc4be36fc8de4b1e020d0ee78b4f829300d552639d8bcc332e78759888dd6063",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/README.md": {
+      "sha256": "ab826004e8c5de1eaeafe84e00ff71a8433ae4e0d06f31e49d3c86c45e6c8f47",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/stale-work.md": {
+      "sha256": "9cf86b48c2dc3448e2b594c1edfe3f184697aadc08562a18c81b3a30c0a4d36a",
+      "ownership": "framework"
+    },
+    ".devframework/patterns/sync-semantics.md": {
+      "sha256": "f474bf6dbb824aec1d6c464027ce8cde2f2d63bc383ec402d26dff14a48d72e3",
+      "ownership": "framework"
+    },
+    ".devframework/profiles/generic.md": {
+      "sha256": "358f25a513831325e961b389aa89b091d8875b13ef3ba386ce7c176f08f8eddc",
+      "ownership": "framework"
+    },
+    ".devframework/profiles/personal-desktop.md": {
+      "sha256": "929fe736665b7affe53d4ce226188e989873d0b4849725b8879c5990e259e327",
+      "ownership": "framework"
+    },
+    ".devframework/profiles/service.md": {
+      "sha256": "a4a29e607ab12a20ae22f8881f95d78d03c0765a5ced678d860ba11ba6038f96",
+      "ownership": "framework"
+    },
+    ".devframework/run_unittest.py": {
+      "sha256": "ffa97e6249ed588a1f8eed03cff90c6d15954edd3e0c13cca1a052c00c00c26c",
+      "ownership": "framework"
+    },
+    ".devframework/safety.py": {
+      "sha256": "42232b1767b2a09c26a39666f0be925d27f5ebe4e4c0118a6b8fe2a8735a5632",
+      "ownership": "framework"
+    },
+    ".devframework/secrets_check.py": {
+      "sha256": "6a1d4203c8d52ee6feab3ee857e5447d088e8da17af000c9c6b22d09add6c5e9",
+      "ownership": "framework"
+    },
+    ".devframework/source_scope.py": {
+      "sha256": "95710cd3176d2524edecbec896e6d6f23284e29a8ab1f48e414f9a40c8dd8b34",
+      "ownership": "framework"
+    },
+    ".devframework/test_evidence.py": {
+      "sha256": "a8ff3f302768c41382ad55e718df3623b05334f80cf6772ac17f3811afd422b6",
+      "ownership": "framework"
+    },
+    ".devframework/VERIFICATION.md": {
+      "sha256": "44760b3abde2c7e9635997debe06a65fdfaa77974ca71e0178df5fcb515a30c1",
+      "ownership": "framework"
+    },
+    ".devframework/verification.py": {
+      "sha256": "bdb03246298dcbaf43ef75bbcb6823a27713dec0d58d69eddc527c66e90b1de7",
+      "ownership": "framework"
+    },
+    "AGENTS.md": {
+      "sha256": "6a7ae1d003c1cfa2524645573630214fd7c5d0f7c061c4453df45e28f33bf7bb",
+      "ownership": "framework"
+    },
+    "CLAUDE.md": {
+      "sha256": "c033af948d1fd0fd4c63d7bf33ca7cfee389886061e108cc4ea5e5ffab1b0bd8",
+      "ownership": "framework"
+    },
+    "docs/ARCHITECTURE.md": {
+      "sha256": "304f03fb1a103de81465798598b19d492d2f141f4644626c10df23064cebc613",
+      "ownership": "project"
+    },
+    "docs/archive/.gitkeep": {
+      "sha256": "4622b09452ff2b0388c74ad5fc00c0f0950b731205d73e00bb56e7f0913ffb7d",
+      "ownership": "project"
+    },
+    "docs/BACKLOG.md": {
+      "sha256": "10b1d8d4cc5de59b306c7a486bee25926956fa2281e3f4418931452889e583ab",
+      "ownership": "project"
+    },
+    "docs/CHECKLIST_TEMPLATE.md": {
+      "sha256": "407402dd7a0f44b987e8769c04d65182d1e20a27b38a9ea0fc5dc96c16c05597",
+      "ownership": "project"
+    },
+    "docs/INVARIANTS.md": {
+      "sha256": "a353595e4e5483b760c8aabf0fc684579124ca8491118eceec6c65c40cb2459b",
+      "ownership": "project"
+    },
+    "docs/KNOWN_ERRORS.md": {
+      "sha256": "bcb10e06533ba7770fc1f7a92caaffcd4ce2b5d4b67d296ce57ad87421ff2ae8",
+      "ownership": "project"
+    },
+    "docs/REGRESSION_TEST.md": {
+      "sha256": "217f66d43db83ea2009965d974a5e4d36ae0baf5c30842063bff6cc1e52c279f",
+      "ownership": "project"
+    },
+    "docs/RELEASE.md": {
+      "sha256": "1638b3b5d76a019e73449d6c13d4052aae341753a8467afc44b9a10834f34c9d",
+      "ownership": "project"
+    },
+    "docs/REQUIREMENTS.md": {
+      "sha256": "43852352d951ccd5d0b58ee061e14c4124d58a4dec0f3d629360610bf622c6f3",
+      "ownership": "project"
+    },
+    "docs/USE_CASE_TEMPLATE.md": {
+      "sha256": "ad73729a617cc188777f0604747e71ba0bcca325a384e1a2aef0a8fb7cc62c5f",
+      "ownership": "project"
+    },
+    "docs/USE_CASES.md": {
+      "sha256": "9c0f23b5f2efc50aea9c9661fcaa19c20964f7f7d7f5f1657a4a37fc7e73bf57",
+      "ownership": "project"
+    },
+    "docs/USE_CASES_SLICE_TEMPLATE.md": {
+      "sha256": "2ebe1ceba81c12f68bed3dc7ab3077c5ded33b4a05f31db973a8d36acf522ee8",
+      "ownership": "project"
+    },
+    "PROJECT.md": {
+      "sha256": "6d6bab339fcaad8f78603e8ea7f7d4ab850f813e3b046c7aa2b09fdb84e5fa37",
+      "ownership": "project"
+    },
+    ".devframework/LESSONS.md": {
+      "sha256": "0cfdd5b783b8b31b638f90dbb5d059523500ccc4d31832774ad8b25b8b4f50e3",
+      "ownership": "framework"
+    },
+    ".devframework/project.json": {
+      "sha256": "f7a39ac8e7d57ad37385e2f342b6299647a3eae0793fb4d4ae06ea5c516ad272",
+      "ownership": "project"
+    }
+  }
+}

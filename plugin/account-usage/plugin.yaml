@@ -1,0 +1,5 @@
+name: account-usage
+version: 0.1.0
+description: "Account limits and identity in one call. Agent tool `account_usage` and CLI `hermes usage` for the active provider (openai-codex / anthropic / openrouter) of the current profile, or all profiles. Reuses the core account-usage fetchers; never prints tokens."
+author: "atom67"
+hooks: []
