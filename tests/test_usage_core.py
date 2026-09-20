@@ -171,6 +171,18 @@ class KindsAndThresholds(unittest.TestCase):
         self.assertEqual(text.count("⚠ "), 1)
         self.assertIn("same account as profile 'a'", text)
 
+    def test_xai_billing_payload_becomes_weekly_window(self):
+        payload = {"config": {"currentPeriod": {"type": "USAGE_PERIOD_TYPE_WEEKLY", "end": "2026-09-22T06:41:56+00:00"},
+                              "creditUsagePercent": 36.0, "productUsage": [{"product": "GrokBuild", "usagePercent": 36.0}],
+                              "prepaidBalance": {"val": 0}}}
+        u = uc.xai_windows(payload)
+        self.assertTrue(u["available"])
+        self.assertEqual(u["windows"], [{"label": "Weekly", "used_percent": 36.0, "reset_at": "2026-09-22T06:41:56+00:00"}])
+        self.assertIn("Weekly: 64% remaining (36% used)", u["lines"][2])
+        self.assertIn("GrokBuild: 36% used", u["lines"][3])
+        self.assertFalse(uc.xai_windows({"config": {}})["available"])
+        self.assertIn("10% remaining", uc.breaches({"provider": "xai-oauth", "kind": "windows", "usage": {**u, "windows": [{"label": "Weekly", "used_percent": 90}]}}, self.S)[0])
+
     def test_watch_targets_top_n_or_all(self):
         reports = [{"profile": "a", "providers": [{"provider": "openai-codex", "activity": {"calls": 5}},
                                                   {"provider": "nous", "activity": {"calls": 0}}]},

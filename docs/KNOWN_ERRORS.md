@@ -67,7 +67,13 @@ Rules:
 **Workaround:** none needed
 **Verification:** re-run of `--all-profiles`; no automated test (needs a Windows console)
 
-### KE-2026-09-19-PROVIDER-WITHOUT-FETCHER — providers other than openai-codex/anthropic/openrouter/nous report `unavailable`
+### KE-2026-09-19-PROVIDER-WITHOUT-FETCHER — resolved for xai-oauth (v0.4)
+
+- **Owner, 2026-09-20:** «а почему xai не получаем лимит? должен быть способ его увидеть».
+- **Found:** the official grok-cli reads its quota from the billing proxy `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` with the same OAuth bearer Hermes stores for `xai-oauth` plus a static header `X-XAI-Token-Auth: xai-grok-cli`. Core has no fetcher; upstream PR NousResearch/hermes-agent#114949 (open) adds one. Verified live: `creditUsagePercent 36`, weekly period with `end` timestamp, `productUsage[GrokBuild]`, `prepaidBalance`.
+- **Fix:** `usage_for_xai()` in the plugin (`resolve_xai_oauth_runtime_credentials` → bearer → one GET → `xai_windows()` pure mapper → a `Weekly` window). Token never printed. Fail-soft like the other providers.
+
+### KE-2026-09-19-PROVIDER-WITHOUT-FETCHER (original entry) — providers other than openai-codex/anthropic/openrouter/nous report `unavailable`
 **Where:** `plugin/account-usage/usage_core.py` (`usage_for`)
 **Introduced / detected:** design limitation, 2026-09-19 (the `default` profile on `nous` first showed "no snapshot" before the Nous credits branch was added)
 **Impact:** a profile on gemini/kimi/copilot etc. gets no numbers

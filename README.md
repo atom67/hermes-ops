@@ -42,7 +42,7 @@ Per profile → per provider (the configured one + any provider seen in `state.d
 | **spend** | pay-as-you-go keys without a balance API (Gemini, OpenAI key…) | local spend estimate for the window, models, calls | over budget (opt-in) |
 
 Identity (email, plan) is shown for openai-codex from non-secret JWT claims. Tokens are never printed.
-Providers the host cannot fetch render `unavailable (<reason>)`; nothing raises.
+`xai-oauth` limits come from the Grok CLI billing proxy (`cli-chat-proxy.grok.com/v1/billing`) with the stored OAuth bearer — core has no fetcher yet (upstream PR #114949). Providers the host cannot fetch render `unavailable (<reason>)`; nothing raises.
 
 ## Install (plug-and-play)
 

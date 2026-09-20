@@ -28,6 +28,11 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 - [x] R-12 dedupe live: mastermind Codex block → `same account as profile 'daria'`
 - [x] R-13 nested floor key via `hermes config set` — works; test value unset again
 
+### 1b. xai-oauth limits (owner question 2026-09-20)
+- [x] endpoint found (grok-cli billing proxy), probed live with the stored token: 200, weekly 36 % used
+- [x] `usage_for_xai` + `xai_windows` + test; R-14 pass; installed everywhere
+- [ ] owner: pane shows xai-oauth with a Weekly bar and in the focus strip (wk column)
+
 ### 2. Pane
 - [x] `same_as` line, bars/balance hidden for the duplicate, alerts skip it; `not fetchable` muted
 - [x] `node --check` ok; copied to profile and root `desktop-plugins/`

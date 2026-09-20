@@ -379,8 +379,47 @@ def codex_identity() -> Dict[str, Any]:
     return {}
 
 
+XAI_BILLING_URL = "https://cli-chat-proxy.grok.com/v1/billing?format=credits"   # what the official grok-cli calls
+XAI_BILLING_HEADERS = {"X-XAI-Token-Auth": "xai-grok-cli", "Accept": "application/json"}
+
+
+def xai_windows(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Grok billing JSON -> our usage dict (windows + lines). Pure; see tests."""
+    cfg = payload.get("config") if isinstance(payload.get("config"), dict) else payload
+    used = cfg.get("creditUsagePercent")
+    period = cfg.get("currentPeriod") or {}
+    label = str(period.get("type") or "").replace("USAGE_PERIOD_TYPE_", "").title() or "Period"
+    windows = [{"label": label, "used_percent": float(used), "reset_at": period.get("end")}] if used is not None else []
+    lines = ["📈 Account limits", "Provider: xai-oauth (Grok, via cli-chat-proxy billing)"]
+    for w in windows:
+        lines.append(f"{w['label']}: {100 - w['used_percent']:.0f}% remaining ({w['used_percent']:.0f}% used) • resets {str(w['reset_at'])[:16]}")
+    for item in cfg.get("productUsage") or []:
+        if item.get("product") and item.get("usagePercent") is not None:
+            lines.append(f"  {item['product']}: {float(item['usagePercent']):.0f}% used")
+    prepaid = (cfg.get("prepaidBalance") or {}).get("val")
+    if prepaid:
+        lines.append(f"Prepaid balance: ${float(prepaid):.2f}")
+    return {"available": bool(windows), "windows": windows, "lines": lines, "details": [],
+            "unavailable_reason": None if windows else "no creditUsagePercent in billing response"}
+
+
+def usage_for_xai() -> Dict[str, Any]:
+    """xai-oauth has no fetcher in core (upstream PR #114949 open); the stored OAuth bearer works on grok-cli's billing proxy."""
+    import urllib.request
+    from hermes_cli.auth import resolve_xai_oauth_runtime_credentials
+    creds = resolve_xai_oauth_runtime_credentials() or {}
+    token = creds.get("api_key") or creds.get("access_token")
+    if not token:
+        return {"available": False, "unavailable_reason": "no xai-oauth token (hermes auth login xai-oauth)"}
+    req = urllib.request.Request(XAI_BILLING_URL, headers={**XAI_BILLING_HEADERS, "Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return xai_windows(json.loads(r.read()))
+
+
 def usage_for(provider: str) -> Dict[str, Any]:
     try:
+        if provider == "xai-oauth":
+            return usage_for_xai()
         from agent.account_usage import fetch_account_usage, render_account_usage_lines
         if provider == "nous":
             from agent.account_usage import nous_credits_lines
