@@ -19,13 +19,14 @@ next agreed items, and the three most recently finished features. Keep it under 
 | Task | Scope | Status |
 |---|---|---|
 | v0.2: multi-profile default, `/quota`, activity from state.db, provider kinds, optional watchdog | checklist: [CHECKLIST_v0.2.md](CHECKLIST_v0.2.md) | done (owner ran `/quota`, `/quota local` in Desktop 2026-09-20) |
-| v0.3: Desktop pane | checklist: [CHECKLIST_v0.3.md](CHECKLIST_v0.3.md) | awaiting acceptance (owner: Rescan, open `quota` pane) |
+| v0.3: Desktop pane | checklist: [CHECKLIST_v0.3.md](CHECKLIST_v0.3.md) | done (accepted 2026-09-20) |
 | v0.1 prototype on profile `mastermind` | tool + CLI + installer + docs; checklist: [CHECKLIST_v0.1.md](CHECKLIST_v0.1.md) | done (accepted 2026-09-20) |
 
 ## Next
 
 | Task | Scope | Priority |
 |---|---|---|
+| Pane polish: render `not fetchable` providers muted instead of amber (capability gap, not an error); drop the host's glyph line; read thresholds from plugin settings | small UI follow-up | P3 |
 | Upstream: Desktop slash output contrast (KE-2026-09-20-DESKTOP-SLASH-OUTPUT-DIM) — one-line PR with before/after screenshots | second upstream candidate | P1 |
 | Upstream bug report: Desktop `/usage` omits Codex account limits (KE-2026-09-20-DESKTOP-USAGE-NO-LIMITS, repro on 0.20.0, link to this plugin) | first upstream contribution candidate | P1 |
 | Decide upstream form: (a) core PR `hermes usage` CLI reusing `agent.account_usage`; (b) tool contribution to `rarf/hermes-quota-plugin`; (c) keep standalone | see `D:\DEV\Hermes\docs\HERMES_CONTRIBUTION_STRATEGY_2026-09-18.md` | P1 |

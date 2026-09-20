@@ -1,7 +1,7 @@
 # v0.3 — Desktop pane (readable multi-profile quota UI)
 
 **Started:** 2026-09-20
-**Status:** awaiting acceptance
+**Status:** accepted 2026-09-20 (owner opened the pane in Desktop)
 
 ## Scope agreed with the operator
 
@@ -21,7 +21,7 @@ plugin pane; "делай доработки".
 - [x] `node --check` passes
 - [x] installer step `install_desktop` (+ `--no-desktop`); installed for mastermind and root home
 - [x] R-11a: Desktop lists `Account Usage - on disk` (root home path) and it is enabled (2026-09-20 screenshot)
-- [ ] R-11b: owner opens the `quota` tab in the right dock, numbers equal `/quota`
+- [x] R-11b: owner opened the `quota` tab (right zone), content rendered; numbers equal `/quota` (2026-09-20)
 
 **Acceptance:** the `quota` tab is visible in the right dock; All/This profile switch works; an
 alert row appears for the depleted Nous balance; no error box.
