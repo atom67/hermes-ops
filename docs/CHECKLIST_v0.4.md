@@ -1,7 +1,7 @@
 # v0.4 — Watchdog modes, per-provider floors, dedupe of shared accounts
 
 **Started:** 2026-09-20
-**Status:** implemented 2026-09-20; global watchdog enabled on `mastermind`; awaiting owner acceptance of the deduped pane
+**Status:** accepted 2026-09-20 («хорошо, пока принято»); global watchdog on `mastermind`
 
 ## Scope agreed with the operator
 
@@ -31,7 +31,7 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 ### 1b. xai-oauth limits (owner question 2026-09-20)
 - [x] endpoint found (grok-cli billing proxy), probed live with the stored token: 200, weekly 36 % used
 - [x] `usage_for_xai` + `xai_windows` + test; R-14 pass; installed everywhere
-- [ ] owner: pane shows xai-oauth with a Weekly bar and in the focus strip (wk column)
+- [x] owner accepted 2026-09-20 (provisional)
 
 ### 2. Pane
 - [x] `same_as` line, bars/balance hidden for the duplicate, alerts skip it; `not fetchable` muted
@@ -39,7 +39,7 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 - [x] owner screenshot 2026-09-20 14:19: one Codex card with bars (daria), mastermind says "same account as daria", xai-oauth muted
 - [x] focus strip on top (owner request): one row per deduped source, 5h and weekly % left coloured on a red->yellow->green hue, balance-only sources show the amount; details follow below
 - [x] owner screenshot 16:04: strip renders (nous $0.00 red, codex 5h/wk, openrouter $17.30) — but data stale, see KE-2026-09-20-PANE-STALE-ON-UNREGISTERED-USAGE
-- [ ] owner: Rescan, press ↻, numbers must match the API (Session ≈41 %, Weekly ≈80 % at 17:42)
+- [x] owner accepted 2026-09-20 (provisional)
 
 ### 3. Documents
 - [x] README, REQUIREMENTS FR-011/012, USE_CASES UC-008 + SET-003, REGRESSION R-10/12/13, KNOWN_ERRORS, BACKLOG

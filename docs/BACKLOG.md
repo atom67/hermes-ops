@@ -19,7 +19,7 @@ next agreed items, and the three most recently finished features. Keep it under 
 | Task | Scope | Status |
 |---|---|---|
 | v0.2: multi-profile default, `/quota`, activity from state.db, provider kinds, optional watchdog | checklist: [CHECKLIST_v0.2.md](CHECKLIST_v0.2.md) | done (owner ran `/quota`, `/quota local` in Desktop 2026-09-20) |
-| v0.4: watchdog modes (profile top-2 / all top-4, N or all, per-provider balance floors), dedupe of identical accounts in the multi-profile report, pane mutes `not fetchable`; global watchdog enabled on `mastermind` | checklist: [CHECKLIST_v0.4.md](CHECKLIST_v0.4.md) | done 2026-09-20, awaiting owner acceptance of the deduped pane |
+| v0.4: watchdog modes (profile top-2 / all top-4, N or all, per-provider balance floors), dedupe of identical accounts in the multi-profile report, pane mutes `not fetchable`; global watchdog enabled on `mastermind` | checklist: [CHECKLIST_v0.4.md](CHECKLIST_v0.4.md) | accepted 2026-09-20 (+ focus strip, xai-oauth limits, install-everywhere default) |
 | v0.3: Desktop pane | checklist: [CHECKLIST_v0.3.md](CHECKLIST_v0.3.md) | done (accepted 2026-09-20) |
 | v0.1 prototype on profile `mastermind` | tool + CLI + installer + docs; checklist: [CHECKLIST_v0.1.md](CHECKLIST_v0.1.md) | done (accepted 2026-09-20) |
 
