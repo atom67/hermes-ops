@@ -1,5 +1,5 @@
 name: account-usage
-version: 0.2.0
+version: 0.3.0
 description: "Account limits, prepaid balances and local spend across ALL Hermes profiles, in one call: agent tool `account_usage`, slash command `/quota [local|all|<profile>]`, CLI `hermes usage`. Providers active in the last 7 days are detected from state.db. Optional threshold watchdog as a cron job (Telegram/local delivery). Reuses the core account-usage fetchers; never prints tokens."
 author: "atom67"
 hooks: []

@@ -6,7 +6,8 @@ solved a real problem here, with the measurement that motivated it.
 
 | Entry | Status |
 |---|---|
-| [`plugin/account-usage`](plugin/account-usage) — account limits + identity in one call for the agent and the shell | v0.2, tested on Hermes v0.20.0 |
+| [`plugin/account-usage`](plugin/account-usage) — account limits, balances and spend across profiles for the agent, the chat (`/quota`) and the shell | v0.3, tested on Hermes v0.20.0 |
+| [`desktop/account-usage`](desktop/account-usage) — Hermes Desktop pane for the same data (progress bars, alerts, per-model activity) | v0.3, awaiting owner acceptance |
 
 ---
 
@@ -21,13 +22,14 @@ weekly limit is left?"* took the agent **17 model cycles, 20 tool calls, 449 s**
 plugin: **2 tool calls, one turn**. In Hermes Desktop the built-in `/usage` showed no Codex
 limits at all (upstream #45713); `/quota` does.
 
-## Three ways in
+## Four ways in
 
 | Where | How | Scope |
 |---|---|---|
 | chat (Desktop, TUI, Telegram…) | ask in plain words: *"общий отчёт по лимитам"*, *"сколько осталось на этом профиле?"* → the agent calls `account_usage(scope=all|local|<profile>)` | all profiles by default |
 | chat slash command | `/quota` · `/quota local` · `/quota daria` · `/quota --days 30` | no model turn, instant |
 | shell / cron | `hermes -p <profile> usage [--local | --profile NAME] [--days N] [--json]` | scripts, watchdog |
+| **Hermes Desktop pane** | tab `quota` in the right dock: progress bars per window, balances, ⚠ alerts on top, per-model activity, All/This profile toggle, auto-refresh 5 min | readable UI — Desktop renders slash output dim and small |
 
 ## What a report contains
 
@@ -50,8 +52,10 @@ python install.py --profile mastermind --watchdog 60m --deliver telegram --weekl
 ```
 
 Copies `plugin/account-usage/` into `<HERMES_HOME>/plugins/`, adds `account-usage` to
-`plugins.enabled` (backup written, comments preserved). **Restart** the profile's
-gateway/TUI/Desktop. The watchdog is optional: a normal Hermes cron job (`--no-agent`) that
+`plugins.enabled` (backup written, comments preserved), and copies the Desktop pane
+(`desktop/account-usage/plugin.js`) into `<HERMES_HOME>/desktop-plugins/` and the root home
+(`--no-desktop` to skip). **Restart** the profile's gateway/TUI/Desktop; for the pane alone,
+Settings → Plugins → Rescan is enough (runtime plugins hot-reload). The watchdog is optional: a normal Hermes cron job (`--no-agent`) that
 prints only on a threshold breach, once per breach-set per day; `--deliver telegram` pushes via
 the profile's bot, `local` keeps it in cron output. Thresholds live in
 `plugins.entries.account-usage.settings.*` (`hermes config set …`).
@@ -93,14 +97,24 @@ Not tested: Anthropic as primary provider, Linux, Hermes ≥ v2026.9.x (unverifi
 - `--all-profiles` = one subprocess per profile, sequential (≈1.5 s each).
 - First-round support: issues with `hermes version` + `--json` output (redact email).
 
+## Desktop pane — how it works
+
+Plain ESM (`desktop/account-usage/plugin.js`), loaded by Hermes Desktop's runtime plugin
+door (`<hermes home>/desktop-plugins/<name>/plugin.js`, hot-reloaded, listed in Settings →
+Plugins). It registers one pane (`area: 'panes'`, right dock) and gets its data through the
+gateway RPC `cli.exec` → `hermes usage --json`, so no chat session is needed and the numbers
+are exactly those of `/quota`. Note: Desktop runtime plugins execute with full app authority
+by the host's design — read the file before installing, as with any local plugin.
+
 ## Development
 
 DEV Framework project: `PROJECT.md`, `docs/` (requirements, architecture, use cases, regression,
 known errors, backlog + active checklist), `.devframework/check.py doctor|finish`.
 
 ```bash
-python -m unittest discover -s tests -v       # 14 tests, no Hermes, no network
+python -m unittest discover -s tests -v       # 13 tests, no Hermes, no network
 python .devframework/check.py finish          # counted evidence + source digest
+node --check desktop/account-usage/plugin.js  # (copy to .mjs first) Desktop pane syntax
 ```
 
 License: MIT.

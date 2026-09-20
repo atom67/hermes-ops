@@ -30,7 +30,7 @@ not handed back to the product owner as debugging chores.
 
 | Risk / requirement | Test command or source | What is NOT covered |
 |---|---|---|
-| NFR-001 token leak, FR-004 identity, FR-009 kinds/thresholds/balance parsing, multi-profile rendering | `python .devframework/run_unittest.py --start tests` -> `tests/test_usage_core.py` (14 tests) | real provider HTTP, real token store, Hermes loader registration |
+| NFR-001 token leak, FR-004 identity, FR-009 kinds/thresholds/balance parsing, multi-profile rendering | `python .devframework/run_unittest.py --start tests` -> `tests/test_usage_core.py` (13 tests) | real provider HTTP, real token store, Hermes loader registration |
 
 ## Cases
 
@@ -45,6 +45,7 @@ not handed back to the product owner as debugging chores.
 | R-08 | UC-004 handler in-process | `discover_plugins(); get_plugin_command_handler('quota')('local')` with `HERMES_HOME`=mastermind | handler registered; returns `Profile: mastermind` block | pass 2026-09-20 |
 | R-09 | UC-005 activity | `hermes -p mastermind usage` | daria block lists openrouter (62 calls, deepseek models) although its primary is openai-codex; default (nous) shows balance and an alert `nous: balance $0.00` | pass 2026-09-20 (6.5 s, 3 profiles) |
 | R-10 | UC-006 watchdog | `install.py --profile <p> --watchdog 60m --deliver local`; `hermes -p <p> cron list`; trigger the job | job exists; output only when a threshold is breached; second run within 24 h silent | not run (watchdog not enabled on any profile yet) |
+| R-11 | UC-007 Desktop pane | Settings → Plugins → Rescan (or restart); open the `quota` tab in the right dock; toggle All/This profile; press ↻ | pane lists profiles with progress bars and alerts; numbers equal `/quota`; no chat session required | not yet run by the owner |
 | R-05 | installer idempotence | run `python install.py --profile mastermind` twice | second run prints `already enabled`; exactly one `- account-usage` line in config | pass 2026-09-19 (second run: `already enabled`, 1 line) |
 
 ## Findings

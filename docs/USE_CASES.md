@@ -75,6 +75,7 @@ it.
 |---|---|---|---|---|
 | SET-001 | Plugin installed and enabled: `python install.py --profile <name>` copies `plugin/account-usage` to `<HERMES_HOME>/plugins/` and adds `account-usage` to `plugins.enabled`; restart the profile's gateway/TUI/Desktop | project root / profile `config.yaml` | required | UC-001, UC-002, UC-003, UC-004, UC-005, UC-006 |
 | SET-003 | Watchdog (optional): `python install.py --profile <name> --watchdog 60m --deliver telegram\|local [--weekly N --session N --balance-usd X --budget-usd Y --days N]` — creates cron job `quota-watch` and stores thresholds in `plugins.entries.account-usage.settings` | installer / `hermes config set` / `hermes cron` | optional | UC-006 |
+| SET-004 | Desktop pane: `desktop/account-usage/plugin.js` copied to `<HERMES_HOME>/desktop-plugins/account-usage/` (installer does it; `--no-desktop` skips) | installer | optional | UC-007 |
 | SET-002 | Provider login of the profile (`hermes -p <name> auth login openai-codex` etc.) — the plugin reads the resulting token store, it never logs in itself | Hermes auth | required for limits; without it the report says `unavailable` | UC-001, UC-002, UC-003, UC-004 |
 
 ---
@@ -142,6 +143,15 @@ account is in use and how much quota remains, in one step, without reading sourc
 - **Outcome (value / function achieved):** the operator learns about a dying token, an exhausted weekly window or a depleted balance without asking; no pushes when nothing changed.
 - **Test:** NFV (cron scheduling, delivery) — manual R-10; threshold logic covered by `test_breach_*`.
 
+#### UC-007 — Readable report in the Desktop UI
+
+- **Trigger:** Interactive — the operator opens the `quota` pane in Hermes Desktop (right dock) or presses ↻; Automatic — refresh every 5 minutes while open.
+- **Actor:** `desktop/account-usage/plugin.js` (Desktop runtime plugin).
+- **Preconditions:** SET-001 in the profile the Desktop backend runs; SET-004.
+- **Flow:** pane → `host.request('cli.exec', {argv: ['usage','--json']})` → backend runs `hermes usage --json` in the active profile → JSON reports → progress bars per window (colour by remaining %), balances, ⚠ alerts, per-model activity.
+- **Outcome (value / function achieved):** the same numbers as `/quota`, but readable: full-contrast UI instead of the dim 11px system line Desktop uses for slash output (KE-2026-09-20-DESKTOP-SLASH-OUTPUT-DIM).
+- **Test:** NFV (Electron UI) — manual regression R-11; data path covered by the CLI tests.
+
 ---
 
 ## Not functionally verifiable — keep in mind during development
@@ -153,6 +163,7 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-003 | needs several real profiles | manual regression R-03 | a failing profile must not hide the others |
 | UC-004 | needs a running chat surface (Desktop/TUI/gateway) | manual R-07 + in-process handler check R-08 | `/quota` must never call the model |
 | UC-006 | cron scheduling and delivery are host behaviour | manual R-10 | silent when nothing breached; one message per breach-set per day |
+| UC-007 | Electron UI rendering | manual R-11 | pane must never block the app: every fetch error renders inline |
 
 ## Traceability
 
@@ -164,3 +175,4 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-004 | Interactive | FR-007 | `__init__.py` (`register_command`) | NFV |
 | UC-005 | Automatic | FR-008, FR-009 | `usage_core.activity`, `classify`, `extract_balance` | covered |
 | UC-006 | Automatic | FR-005 | `quota_watch.py`, `install.py` | NFV |
+| UC-007 | Interactive | FR-010 | `desktop/account-usage/plugin.js` | NFV |

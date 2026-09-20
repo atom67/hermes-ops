@@ -31,6 +31,7 @@ from pathlib import Path
 
 PLUGIN_NAME = "account-usage"
 SRC = Path(__file__).resolve().parent / "plugin" / PLUGIN_NAME
+DESKTOP_SRC = Path(__file__).resolve().parent / "desktop" / PLUGIN_NAME
 WATCH_SCRIPT = "quota_watch.py"
 JOB_NAME = "quota-watch"
 SETTING_KEYS = {"weekly": "weekly_min_percent", "session": "session_min_percent",
@@ -120,6 +121,17 @@ def setup_watchdog(home: Path, profile: str | None, args) -> None:
     print(f"  cron job '{JOB_NAME}' every {args.watchdog}, deliver={args.deliver}: {status}")
 
 
+def install_desktop(home: Path, root: Path, uninstall: bool) -> None:
+    """Desktop pane: the app reads <active profile home>/desktop-plugins/ and the root home."""
+    for base in {home, root}:
+        dst = base / "desktop-plugins" / PLUGIN_NAME
+        if uninstall:
+            shutil.rmtree(dst, ignore_errors=True)
+            continue
+        shutil.copytree(DESKTOP_SRC, dst, dirs_exist_ok=True)
+        print(f"{base.name or base}: desktop pane copied to {dst} (Settings -> Plugins -> Rescan, or restart Desktop)")
+
+
 def install(home: Path, uninstall: bool) -> None:
     dst = home / "plugins" / PLUGIN_NAME
     if uninstall:
@@ -149,6 +161,7 @@ def main() -> None:
     ap.add_argument("--budget-usd", dest="budget_usd", type=float,
                     help="alert when pay-as-you-go spend over the window > $X (off by default)")
     ap.add_argument("--days", type=int, help="activity window in days (default 7)")
+    ap.add_argument("--no-desktop", action="store_true", help="skip the Desktop pane (desktop-plugins/)")
     args = ap.parse_args()
     root = hermes_root()
     homes = [root / "profiles" / p for p in args.profile] + ([root] if args.global_ else [])
@@ -156,6 +169,8 @@ def main() -> None:
         ap.error("give --profile NAME and/or --global")
     for home in homes:
         install(home, args.uninstall)
+        if not args.no_desktop:
+            install_desktop(home, root, args.uninstall)
         if args.uninstall:
             continue
         profile = home.name if home.parent.name == "profiles" else None

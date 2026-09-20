@@ -84,3 +84,12 @@ Rules:
 **Status:** not fixed upstream; worked around by asking the agent (tool `account_usage`)
 **Workaround:** ask the agent in chat, or run `hermes -p <profile> usage`
 **Verification:** manual, regression R-06; candidate for an upstream bug report with this repro
+
+### KE-2026-09-20-DESKTOP-SLASH-OUTPUT-DIM — Desktop renders every slash-command result at 11px and 60 % opacity
+**Where:** Hermes Desktop 0.20.0, `apps/desktop/src/components/assistant-ui/thread/system-message.tsx:47-49` (`text-[0.6875rem] text-muted-foreground/60 w-[60%]`)
+**Introduced / detected:** detected 2026-09-20 by the owner (`/usage` and `/quota` output barely readable)
+**Impact:** multi-line command output (usage tables, quota reports) is hard to read; plain text only, no markdown
+**Cause:** one style for all system lines, designed for one-line statuses; the code comment acknowledges multiline output needs more room but keeps the colour/size
+**Status:** not fixed upstream; worked around by the Desktop pane (v0.3) and by asking the agent in words
+**Workaround:** open the `quota` pane, or ask the agent — a normal assistant bubble
+**Verification:** manual; candidate upstream PR: full colour and 12–13 px for multiline output
