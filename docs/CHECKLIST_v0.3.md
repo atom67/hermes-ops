@@ -20,7 +20,8 @@ plugin pane; "делай доработки".
 - [x] `plugin.js` (plain ESM, React from the app singleton, SDK `host.request('cli.exec')`, `Button`, `PANES_AREA`)
 - [x] `node --check` passes
 - [x] installer step `install_desktop` (+ `--no-desktop`); installed for mastermind and root home
-- [ ] R-11: owner opens the pane (Rescan or restart), numbers equal `/quota`
+- [x] R-11a: Desktop lists `Account Usage - on disk` (root home path) and it is enabled (2026-09-20 screenshot)
+- [ ] R-11b: owner opens the `quota` tab in the right dock, numbers equal `/quota`
 
 **Acceptance:** the `quota` tab is visible in the right dock; All/This profile switch works; an
 alert row appears for the depleted Nous balance; no error box.
@@ -33,6 +34,7 @@ alert row appears for the depleted Nous balance; no error box.
 
 - Data path is `cli.exec` → a subprocess per refresh (~6 s for 3 profiles); fine at 5-minute
   refresh, wasteful under 30 s. Upgrade: backend REST route (`ctx.rest`) if refresh gets frequent.
+- Observed 2026-09-20: Desktop loaded the pane from the ROOT home (`<hermes>/desktop-plugins/`), not from the profile copy; keep the root copy, the profile copy is harmless but may be redundant.
 - The pane uses the backend of the *active* profile: the `usage` command must be enabled there
   (the installer enables it per profile; `--global` for the root/default profile).
 - Alerts in the pane use fixed thresholds (15 % weekly, $5 balance); the backend's configured
