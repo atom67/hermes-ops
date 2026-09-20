@@ -380,7 +380,7 @@ def codex_identity() -> Dict[str, Any]:
 
 
 XAI_BILLING_URL = "https://cli-chat-proxy.grok.com/v1/billing?format=credits"   # what the official grok-cli calls
-XAI_BILLING_HEADERS = {"X-XAI-Token-Auth": "xai-grok-cli", "Accept": "application/json"}
+XAI_BILLING_HEADERS = {"X-XAI-Token-Auth": "xai-grok-cli", "Accept": "application/json"}  # public client marker, not a secret
 
 
 def xai_windows(payload: Dict[str, Any]) -> Dict[str, Any]:
