@@ -14,7 +14,11 @@ only what the release actually changes.
 
 | Component | Version lives in |
 |---|---|
-| ... | ... |
+| backend plugin | `plugin/account-usage/plugin.yaml` → `version` (0.4.0) |
+| Desktop pane | same number, stated in `README.md` table; `plugin.js` carries no version field |
+| installer | unversioned; follows the plugin |
+
+Deploy = `python install.py` (every home) + restart of the profile backends / Desktop. Rollback = `git checkout <prev> && python install.py`; the installer keeps `config.yaml.bak-<UTC>` backups.
 
 ## Order
 

@@ -15,7 +15,9 @@ same question took 2 tool calls and one model turn (56 s, session `20260919_2129
 
 Runtime: Python 3.11 (the Hermes venv), Hermes Agent v0.20.0 (2026.8.3). Standard library
 only; the plugin imports the host's `agent.account_usage` and `hermes_cli.auth` at call
-time. No third-party packages, no network I/O of its own.
+time. No third-party packages. Network I/O of its own: exactly one HTTPS GET, the Grok CLI
+billing proxy for `xai-oauth` (core has no fetcher; see ARCHITECTURE decisions). The Desktop
+pane (`desktop/account-usage/plugin.js`) is plain ESM on the app's React, no build step.
 
 ## File map and boundaries
 
@@ -25,7 +27,9 @@ time. No third-party packages, no network I/O of its own.
 | `plugin/account-usage/__init__.py` | `register(ctx)`: agent tool `account_usage`, CLI `hermes usage` |
 | `plugin/account-usage/usage_core.py` | pure helpers (JWT claims, identity pick, snapshot→dict, render) + Hermes-backed collectors; runnable as a script (used per profile in `--all-profiles`) |
 | `tests/test_usage_core.py` | unit tests of the pure helpers, synthetic data only |
-| `install.py` | copies the plugin into `<HERMES_HOME>/plugins/account-usage` and enables it in `config.yaml` |
+| `install.py` | copies the plugin into every home (or `--profile`/`--global`), enables it in `config.yaml`, copies the Desktop pane, optional watchdog cron + settings |
+| `plugin/account-usage/quota_watch.py` | optional cron `--no-agent` watchdog (two scopes, top-N, per-provider floors) |
+| `desktop/account-usage/plugin.js` | Hermes Desktop runtime plugin: the `quota` pane |
 | `docs/` | DEV Framework documents (this project owns them) |
 
 Consumers of shared code: the plugin is consumed by the Hermes loader; nothing else imports it.
