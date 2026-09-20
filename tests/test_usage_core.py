@@ -157,7 +157,13 @@ class KindsAndThresholds(unittest.TestCase):
         out = uc.dedupe(reports)
         self.assertNotIn("same_as", out[0]["providers"][0])
         self.assertEqual(out[1]["providers"][0]["same_as"], "a")
-        self.assertNotIn("same_as", out[2]["providers"][0])                     # different numbers = different account
+        self.assertEqual(out[2]["providers"][0]["same_as"], "a")               # same account id wins even if numbers drifted between fetches
+        anon = {"provider": "openrouter", "kind": "windows", "usage": {"lines": ["resets in 43m"], "windows": [{"label": "Key", "used_percent": 21}]}}
+        drift = {**anon, "usage": {"lines": ["resets in 42m"], "windows": [{"label": "Key", "used_percent": 21}]}}
+        other = {**anon, "usage": {"windows": [{"label": "Key", "used_percent": 50}]}}
+        anon_out = uc.dedupe([{"profile": "x", "providers": [anon]}, {"profile": "y", "providers": [drift, other]}])
+        self.assertEqual(anon_out[1]["providers"][0]["same_as"], "x")           # no identity: same numbers, drifting text
+        self.assertNotIn("same_as", anon_out[1]["providers"][1])                # different numbers = different key
         self.assertEqual(out[1]["providers"][0]["activity"]["calls"], 30)        # activity stays per profile
         self.assertEqual(uc.breaches(out[1]["providers"][0], self.S), [])
         self.assertIs(reports[1]["providers"][0].get("same_as"), None)          # input untouched

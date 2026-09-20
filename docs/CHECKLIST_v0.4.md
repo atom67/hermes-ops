@@ -43,8 +43,10 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 
 - Top-N ranks by call count only; a provider with 0 calls in the window is not a channel and is skipped
   unless `watch_top: all` (so the idle `default/nous` $0 balance stops alerting in the global watchdog).
-- Dedupe compares provider + identity + the remote numbers at fetch time; two profiles on one account
-  fetched seconds apart with a changed percentage would show twice — harmless, self-healing next run.
+- Dedupe: a known account id (Codex JWT claim) decides sameness on its own; providers without identity
+  are compared by window percentages and balance only. The first version also compared the host's
+  rendered lines, and "resets in 43m" vs "42m" between two subprocess fetches broke the match — the
+  owner saw Codex twice in the focus strip (2026-09-20 15:12); fixed, covered by `test_dedupe_*`.
 - `--deliver local` for a Desktop-run cron: where the output surfaces has not been observed yet (R-10 note).
 
 ## Handoff

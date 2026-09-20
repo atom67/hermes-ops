@@ -184,13 +184,17 @@ def breaches(block: Dict[str, Any], settings: Dict[str, Any]) -> List[str]:
 
 def _quota_signature(block: Dict[str, Any]) -> Optional[str]:
     """Same provider + same remote numbers = same account; None when there is nothing remote to compare."""
-    usage = block.get("usage") or {}
-    remote = {k: usage.get(k) for k in ("windows", "lines", "details", "balance_usd") if usage.get(k)}
-    if not remote:
-        return None
     ident = block.get("identity") or {}
-    who = ident.get("chatgpt_account_id") or ident.get("email") or ""
-    return json.dumps([block.get("provider"), who, remote], sort_keys=True, default=str)
+    who = ident.get("chatgpt_account_id") or ident.get("email")
+    if who:
+        return json.dumps([block.get("provider"), who])  # a known account id is the whole story
+    usage = block.get("usage") or {}
+    # ponytail: no identity -> compare the numbers only; rendered lines carry "resets in 43m" and drift between fetches
+    remote = {"windows": [(w.get("label"), w.get("used_percent")) for w in usage.get("windows") or []],
+              "balance": usage.get("balance_usd"), "details": usage.get("details")}
+    if not any(remote.values()):
+        return None
+    return json.dumps([block.get("provider"), remote], sort_keys=True, default=str)
 
 
 def dedupe(reports: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
