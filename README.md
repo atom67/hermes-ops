@@ -6,87 +6,100 @@ solved a real problem here, with the measurement that motivated it.
 
 | Entry | Status |
 |---|---|
-| [`plugin/account-usage`](plugin/account-usage) — account limits + identity in one call for the agent and the shell | v0.1, tested on Hermes v0.20.0 |
+| [`plugin/account-usage`](plugin/account-usage) — account limits + identity in one call for the agent and the shell | v0.2, tested on Hermes v0.20.0 |
 
 ---
 
 # account-usage — Hermes plugin
 
-**One call instead of twenty.** Gives the Hermes agent and your shell the same account-limit
-data that the `/usage` slash command shows — plus which account is logged in — for the
-active provider of a profile, or for all profiles at once.
+**One call instead of twenty, across all your profiles.** Gives the Hermes agent, the chat
+and your shell the account-limit data behind the `/usage` slash command — plus which account
+is logged in, prepaid balances, and what each profile actually used in the last 7 days.
 
 Measured on Hermes v0.20.0 (2026-09-19): the question *"which account are you on and how much
-weekly limit is left?"* took the agent **17 model cycles, 20 tool calls, 449 s** (it had to
-find and read the core source to reach the data). With this plugin: **2 tool calls, one model
-turn, 56 s**.
+weekly limit is left?"* took the agent **17 model cycles, 20 tool calls, 449 s**. With this
+plugin: **2 tool calls, one turn**. In Hermes Desktop the built-in `/usage` showed no Codex
+limits at all (upstream #45713); `/quota` does.
 
-## What you get
+## Three ways in
 
-- agent tool `account_usage(provider?, all_profiles?)` — the model answers quota questions directly;
-- CLI `hermes -p <profile> usage [--provider X] [--all-profiles] [--json]`;
-- identity for OpenAI Codex (email, plan, account id) from non-secret JWT claims — tokens are never printed;
-- Nous credits for profiles on the `nous` provider;
-- fail-soft: a provider without data renders `Limits: unavailable (<reason>)`.
+| Where | How | Scope |
+|---|---|---|
+| chat (Desktop, TUI, Telegram…) | ask in plain words: *"общий отчёт по лимитам"*, *"сколько осталось на этом профиле?"* → the agent calls `account_usage(scope=all|local|<profile>)` | all profiles by default |
+| chat slash command | `/quota` · `/quota local` · `/quota daria` · `/quota --days 30` | no model turn, instant |
+| shell / cron | `hermes -p <profile> usage [--local | --profile NAME] [--days N] [--json]` | scripts, watchdog |
 
-Providers covered = whatever the host's `agent.account_usage` supports (openai-codex, anthropic,
-openrouter) + Nous credits. For 9-provider coverage and a Desktop status chip see
-[rarf/hermes-quota-plugin](https://github.com/rarf/hermes-quota-plugin); this plugin does not
-duplicate its fetchers.
+## What a report contains
+
+Per profile → per provider (the configured one + any provider seen in `state.db` in the last N days):
+
+| Kind | Providers | Shown | Threshold |
+|---|---|---|---|
+| **windows** | ChatGPT Plus / Codex, Anthropic Max, OpenRouter API-key quota | % used per window, reset time | weekly < 15 %, session < 10 % |
+| **balance** | OpenRouter credits, Nous credits | remaining $ | balance < $5 |
+| **spend** | pay-as-you-go keys without a balance API (Gemini, OpenAI key…) | local spend estimate for the window, models, calls | over budget (opt-in) |
+
+Identity (email, plan) is shown for openai-codex from non-secret JWT claims. Tokens are never printed.
+Providers the host cannot fetch render `unavailable (<reason>)`; nothing raises.
 
 ## Install (plug-and-play)
 
 ```bash
-python install.py --profile mastermind        # repeat --profile for more; --global for ~/.hermes
+python install.py --profile mastermind            # plugin only, lists providers seen in 7 days
+python install.py --profile mastermind --watchdog 60m --deliver telegram --weekly 15 --balance-usd 5
 ```
 
-Copies `plugin/account-usage/` to `<HERMES_HOME>/plugins/account-usage/` and adds
-`account-usage` to `plugins.enabled` in that profile's `config.yaml` (backup written first,
-comments preserved). Restart the profile's gateway/TUI/Desktop. Verify:
+Copies `plugin/account-usage/` into `<HERMES_HOME>/plugins/`, adds `account-usage` to
+`plugins.enabled` (backup written, comments preserved). **Restart** the profile's
+gateway/TUI/Desktop. The watchdog is optional: a normal Hermes cron job (`--no-agent`) that
+prints only on a threshold breach, once per breach-set per day; `--deliver telegram` pushes via
+the profile's bot, `local` keeps it in cron output. Thresholds live in
+`plugins.entries.account-usage.settings.*` (`hermes config set …`).
 
-```bash
-hermes -p mastermind plugins list      # account-usage  enabled
-hermes -p mastermind usage             # Profile / Account / Session / Weekly
-```
+Uninstall: `python install.py --profile mastermind --uninstall` (then drop the config line and cron job).
 
-Uninstall: `python install.py --profile mastermind --uninstall` and remove the line from `plugins.enabled`.
-
-## Example
+## Example (`hermes usage`)
 
 ```
-Profile: mastermind · provider: openai-codex
-Account: user@example.com (plus)
-📈 Account limits
-Provider: openai-codex (Plus)
-Session: 51% remaining (49% used) • resets in 2h 36m (…)
-Weekly: 92% remaining (8% used) • resets in 6d 21h (…)
+Account usage — 3 profile(s) · 1 alert(s)
+  ⚠ nous: balance $0.00 (< $5.0)
+
+Profile: daria
+openai-codex [windows] · user@example.com (plus)
+  Session: 100% remaining (0% used) • resets in 4h 28m (…)
+  Weekly: 92% remaining (8% used) • resets in 6d 8h (…)
+  last 7d: 840 calls, gpt-5.6-sol, gpt-6-astra, ≈$0.00 (estimate, local accounting)
+openrouter [windows]
+  API key quota: 79% remaining (21% used) • $11.91 of $15.00 remaining • resets monthly
+  Credits balance: $17.30
+  last 7d: 62 calls, deepseek/deepseek-v4-flash-0731, deepseek/deepseek-v4-pro, ≈$0.98 (estimate, local accounting)
 ```
 
-`--json` returns `{profile, provider, identity{…}, usage{available, windows[{label, used_percent, reset_at}], lines[], unavailable_reason}}`; `reset_at` is ISO-8601.
+`--json` returns a list of `{profile, primary, days, providers[{provider, kind, identity, usage{windows[], lines[], balance_usd, unavailable_reason}, activity{calls, models, spend_usd, cost_source, last_seen}}]}`.
 
 ## Tested with
 
 | Hermes | OS | Profiles | Date |
 |---|---|---|---|
-| v0.20.0 (2026.8.3), Desktop 0.20.0 | Windows 11 | openai-codex ×2, nous ×1 | 2026-09-19 |
+| v0.20.0 (2026.8.3), Desktop 0.20.0 | Windows 11 | openai-codex ×2, openrouter ×1, nous ×1 | 2026-09-20 |
 
-Not tested: Anthropic/OpenRouter as primary provider, Linux, Hermes ≥ v2026.9.x (upstream
-renamed nothing we use as of main on 2026-09-19, but this is unverified at runtime).
+Not tested: Anthropic as primary provider, Linux, Hermes ≥ v2026.9.x (unverified at runtime).
 
 ## Limits and support
 
-- No thresholds, alerts or history (see `docs/BACKLOG.md`).
-- `--all-profiles` runs one subprocess per profile, sequentially.
-- Identity only for openai-codex.
-- First-round support: bug reports with `hermes version` + the `--json` output (redact email).
+- Providers = what the host's `agent.account_usage` can fetch (+ Nous credits). No fetchers of our own —
+  for 9-provider coverage and a Desktop status chip see [rarf/hermes-quota-plugin](https://github.com/rarf/hermes-quota-plugin).
+- `spend` is a local estimate from Hermes' own accounting, not a provider invoice.
+- `--all-profiles` = one subprocess per profile, sequential (≈1.5 s each).
+- First-round support: issues with `hermes version` + `--json` output (redact email).
 
 ## Development
 
-DEV Framework project: `PROJECT.md`, `docs/` (requirements, architecture, use cases,
-regression, known errors, backlog + active checklist), `.devframework/check.py doctor|finish`.
+DEV Framework project: `PROJECT.md`, `docs/` (requirements, architecture, use cases, regression,
+known errors, backlog + active checklist), `.devframework/check.py doctor|finish`.
 
 ```bash
-python -m unittest discover -s tests -v       # 7 tests, no Hermes, no network
+python -m unittest discover -s tests -v       # 14 tests, no Hermes, no network
 python .devframework/check.py finish          # counted evidence + source digest
 ```
 

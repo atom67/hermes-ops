@@ -1,7 +1,7 @@
 # v0.1 — one-call account limits for the agent and the shell, on profile `mastermind`
 
 **Started:** 2026-09-19
-**Status:** awaiting acceptance
+**Status:** accepted 2026-09-20 (owner test in Desktop)
 
 ## Scope agreed with the operator
 
@@ -55,8 +55,7 @@ matches `/usage`.
   reuse host fetchers (ARCHITECTURE -> Decisions).
 - Commands/checks actually run, date, result/counts, environment and evidence: see
   "Verification log" below.
-- Checks not run, reason and remaining risk: Desktop chat path not exercised by me (owner
-  action); Anthropic/OpenRouter providers not exercised (no profile uses them as primary);
+- Checks not run, reason and remaining risk: Desktop chat path exercised by the owner 2026-09-20 (pass); Anthropic/OpenRouter providers not exercised (no profile uses them as primary);
   VPS profiles untouched (v0.19.1 API not verified).
 
 ## Verification log

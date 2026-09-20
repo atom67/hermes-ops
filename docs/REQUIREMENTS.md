@@ -20,11 +20,14 @@ Numbers are permanent and unique; superseded ones are struck through, never reus
 
 | ID | Requirement | Status |
 |---|---|---|
-| FR-001 | The agent can obtain account limits and identity of the active provider with one tool call (`account_usage`). | done (v0.1) |
+| FR-001 | The agent can obtain account limits and identity with one tool call (`account_usage`), for all profiles by default or one profile on request. | done (v0.2) |
 | FR-002 | `hermes usage` prints the same report for the current profile; `--json` gives the report object. | done (v0.1) |
-| FR-003 | `--all-profiles` / `all_profiles=true` reports every profile home (default + `profiles/*`). | done (v0.1) |
+| FR-003 | Every entry point reports all profile homes (default + `profiles/*`) unless scoped to `local` or a profile name. | done (v0.2) |
 | FR-004 | Identity (email, plan, account id) is shown for `openai-codex`; Nous credits are shown for `nous`. | done (v0.1) |
-| FR-005 | Threshold alert to the owner (e.g. weekly < 15 %) via gateway delivery. | planned |
+| FR-005 | Optional threshold watchdog (weekly/session %, balance $, spend budget) as a cron job with Telegram/local delivery; silent unless breached. | done (v0.2, opt-in) |
+| FR-007 | Slash command `/quota [local\|all\|<profile>] [--days N]` in every chat surface, no model turn. | done (v0.2) |
+| FR-008 | Providers active in the last N days (from `state.db`) are included automatically with calls, models and spend. | done (v0.2) |
+| FR-009 | Each provider block carries a kind — windows / balance / spend — with matching numbers and thresholds; no invented percentages for pay-as-you-go providers. | done (v0.2) |
 | FR-006 | History of snapshots for trend view. | idea — not agreed |
 
 ## Non-functional requirements

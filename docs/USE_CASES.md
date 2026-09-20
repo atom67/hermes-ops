@@ -73,8 +73,9 @@ it.
 
 | ID | Setting | Where configured | Required / optional | Enables |
 |---|---|---|---|---|
-| SET-001 | Plugin installed and enabled: `python install.py --profile <name>` copies `plugin/account-usage` to `<HERMES_HOME>/plugins/` and adds `account-usage` to `plugins.enabled`; restart the profile's gateway/TUI/Desktop | project root / profile `config.yaml` | required | UC-001, UC-002, UC-003 |
-| SET-002 | Provider login of the profile (`hermes -p <name> auth login openai-codex` etc.) — the plugin reads the resulting token store, it never logs in itself | Hermes auth | required for limits; without it the report says `unavailable` | UC-001, UC-002, UC-003 |
+| SET-001 | Plugin installed and enabled: `python install.py --profile <name>` copies `plugin/account-usage` to `<HERMES_HOME>/plugins/` and adds `account-usage` to `plugins.enabled`; restart the profile's gateway/TUI/Desktop | project root / profile `config.yaml` | required | UC-001, UC-002, UC-003, UC-004, UC-005, UC-006 |
+| SET-003 | Watchdog (optional): `python install.py --profile <name> --watchdog 60m --deliver telegram\|local [--weekly N --session N --balance-usd X --budget-usd Y --days N]` — creates cron job `quota-watch` and stores thresholds in `plugins.entries.account-usage.settings` | installer / `hermes config set` / `hermes cron` | optional | UC-006 |
+| SET-002 | Provider login of the profile (`hermes -p <name> auth login openai-codex` etc.) — the plugin reads the resulting token store, it never logs in itself | Hermes auth | required for limits; without it the report says `unavailable` | UC-001, UC-002, UC-003, UC-004 |
 
 ---
 
@@ -89,16 +90,16 @@ account is in use and how much quota remains, in one step, without reading sourc
 
 #### UC-001 — Agent answers a quota question with one tool call
 
-- **Trigger:** Interactive — the user asks the agent about limits, remaining usage or the account in use.
+- **Trigger:** Interactive — the user asks the agent about limits, remaining usage, balance, spend or the account in use ("общий отчёт" → all profiles, "локальный" → this profile).
 - **Actor:** the agent (model) calling tool `account_usage`.
 - **Preconditions:** SET-001, SET-002.
-- **Flow:** model calls `account_usage` (optionally `provider`) → `report()` reads `model.provider`, decodes identity claims, calls the host fetcher (one HTTPS GET to the provider usage endpoint) → rendered text returned → model answers.
+- **Flow:** model calls `account_usage(scope=all|local|<profile>)` → `usage_core.run()` → per profile: `model.provider` + providers active in the last N days (UC-005), identity claims, host fetcher (one HTTPS GET per provider) → rendered text with an alert header → model answers.
 - **Outcome (value / function achieved):** the answer arrives in one model turn; 2026-09-19 measurement: 2 tool calls / 56 s versus 20 calls / 449 s without the plugin.
 - **Test:** NFV (needs a real OAuth token and provider network) — manual regression R-01; the pure transformations are covered by `tests/test_usage_core.py`.
 
 #### UC-002 — Operator checks limits from the shell
 
-- **Trigger:** Interactive — `hermes -p <profile> usage [--provider X] [--json]`.
+- **Trigger:** Interactive — `hermes -p <profile> usage [--local | --profile NAME] [--provider X] [--days N] [--json]` (default: all profiles).
 - **Actor:** the operator or a script.
 - **Preconditions:** SET-001, SET-002.
 - **Flow:** CLI handler → `report()` → text or JSON on stdout; exit code 1 when the report carries `error`.
@@ -107,12 +108,39 @@ account is in use and how much quota remains, in one step, without reading sourc
 
 #### UC-003 — All profiles at once
 
-- **Trigger:** Interactive — `hermes usage --all-profiles` or tool argument `all_profiles=true`.
+- **Trigger:** Interactive — default scope of every entry point; explicitly `scope=all`, `/quota`, `hermes usage`.
 - **Actor:** the operator or the agent.
 - **Preconditions:** SET-001 in the calling profile; SET-002 in each profile that should show limits.
 - **Flow:** `all_profiles_reports()` spawns `usage_core.py --json` per profile home with its own `HERMES_HOME`; failures become per-profile `error` rows; results are concatenated.
 - **Outcome (value / function achieved):** one view of every account/provider the operator runs, without switching profiles.
 - **Test:** NFV (multiple real profiles) — manual regression R-03.
+
+#### UC-004 — Slash command in chat, no model turn
+
+- **Trigger:** Interactive — `/quota`, `/quota local`, `/quota <profile>`, `/quota --days N` in Desktop, TUI or gateway chat.
+- **Actor:** the operator.
+- **Preconditions:** SET-001 in the profile whose chat is used; SET-002 in each profile that should show limits.
+- **Flow:** the host dispatches the plugin slash command (`tui_gateway/methods_tools.py` / gateway) → `usage_core.run(scope)` → text returned directly, no LLM call.
+- **Outcome (value / function achieved):** instant multi-profile report in the chat surface the operator already has open; works in Desktop where the built-in `/usage` shows no Codex limits (KE-2026-09-20-DESKTOP-USAGE-NO-LIMITS).
+- **Test:** NFV (needs a running chat surface) — manual regression R-07; handler registration and output verified in-process (R-08).
+
+#### UC-005 — Providers used in the last N days are reported automatically
+
+- **Trigger:** Automatic — every report (tool, slash, CLI) reads `state.db` of each profile.
+- **Actor:** `usage_core.activity()`.
+- **Preconditions:** none beyond SET-001 (works without login: activity is local).
+- **Flow:** read-only SQLite query over `session_model_usage` (`last_seen > now − N days`, aux providers excluded) → per provider: calls, models, spend (actual if the host recorded it, else estimate), billing mode → each active provider gets its own block with `kind` windows/balance/spend.
+- **Outcome (value / function achieved):** the report covers what was actually used (e.g. OpenRouter under a Codex-primary profile) without the operator listing providers by hand; pay-as-you-go providers get a spend figure instead of a fake percentage.
+- **Test:** covered — `tests/test_usage_core.py` (`classify`, `extract_balance`, `breaches`, `render_all`); the SQL path itself is NFV (live database) — manual R-09.
+
+#### UC-006 — Optional threshold watchdog
+
+- **Trigger:** Automatic — Hermes cron job `quota-watch` (`--no-agent`), created only with `install.py --watchdog EVERY [--deliver telegram|local]`.
+- **Actor:** `quota_watch.py` in `<HERMES_HOME>/scripts/`.
+- **Preconditions:** SET-001, SET-003.
+- **Flow:** all-profiles report → `breaches()` against `plugins.entries.account-usage.settings` → prints only on a breach, once per breach-set per 24 h (state in `state/quota_watch_state.json`), plus one "all clear" line when the breach clears → cron delivers non-empty stdout to the chosen target.
+- **Outcome (value / function achieved):** the operator learns about a dying token, an exhausted weekly window or a depleted balance without asking; no pushes when nothing changed.
+- **Test:** NFV (cron scheduling, delivery) — manual R-10; threshold logic covered by `test_breach_*`.
 
 ---
 
@@ -123,6 +151,8 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-001 | needs a live OAuth token and the provider's usage endpoint | manual regression R-01 | the tool must return text (never raise) when the token is expired or the provider unknown |
 | UC-002 | same | manual regression R-02 | `--json` output must stay parseable and token-free |
 | UC-003 | needs several real profiles | manual regression R-03 | a failing profile must not hide the others |
+| UC-004 | needs a running chat surface (Desktop/TUI/gateway) | manual R-07 + in-process handler check R-08 | `/quota` must never call the model |
+| UC-006 | cron scheduling and delivery are host behaviour | manual R-10 | silent when nothing breached; one message per breach-set per day |
 
 ## Traceability
 
@@ -131,3 +161,6 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-001 | Interactive | FR-001, FR-004, NFR-001 | `__init__.py`, `usage_core.collectors` | NFV |
 | UC-002 | Interactive | FR-002, NFR-002 | `__init__.py`, `usage_core.collectors` | NFV |
 | UC-003 | Interactive | FR-003, NFR-002 | `usage_core.all_profiles_reports` | NFV |
+| UC-004 | Interactive | FR-007 | `__init__.py` (`register_command`) | NFV |
+| UC-005 | Automatic | FR-008, FR-009 | `usage_core.activity`, `classify`, `extract_balance` | covered |
+| UC-006 | Automatic | FR-005 | `quota_watch.py`, `install.py` | NFV |

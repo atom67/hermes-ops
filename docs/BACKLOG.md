@@ -18,15 +18,16 @@ next agreed items, and the three most recently finished features. Keep it under 
 
 | Task | Scope | Status |
 |---|---|---|
-| v0.1 prototype on profile `mastermind` | tool + CLI + installer + docs; checklist: [CHECKLIST_v0.1.md](CHECKLIST_v0.1.md) | awaiting acceptance |
+| v0.2: multi-profile default, `/quota`, activity from state.db, provider kinds, optional watchdog | checklist: [CHECKLIST_v0.2.md](CHECKLIST_v0.2.md) | awaiting acceptance (owner: `/quota` in Desktop) |
+| v0.1 prototype on profile `mastermind` | tool + CLI + installer + docs; checklist: [CHECKLIST_v0.1.md](CHECKLIST_v0.1.md) | done (accepted 2026-09-20) |
 
 ## Next
 
 | Task | Scope | Priority |
 |---|---|---|
-| Owner test in Hermes Desktop (mastermind): ask the limit question in chat, compare with `/usage` | acceptance evidence for UC-001 | P1 |
+| Upstream bug report: Desktop `/usage` omits Codex account limits (KE-2026-09-20-DESKTOP-USAGE-NO-LIMITS, repro on 0.20.0, link to this plugin) | first upstream contribution candidate | P1 |
 | Decide upstream form: (a) core PR `hermes usage` CLI reusing `agent.account_usage`; (b) tool contribution to `rarf/hermes-quota-plugin`; (c) keep standalone | see `D:\DEV\Hermes\docs\HERMES_CONTRIBUTION_STRATEGY_2026-09-18.md` | P1 |
-| FR-005 threshold alert (weekly < N %) via gateway delivery | needs decision on delivery path (cron job vs hook) | P2 |
+| Enable the watchdog on one profile (`--watchdog 60m --deliver telegram`) and run R-10 | owner decision: which profile/bot | P2 |
 | Install on VPS profiles (kevinashton, horizon) after server upgrade to >= 0.20 | server is v0.19.1 — `agent.account_usage` API must be verified there first | P2 |
 
 ## Recently finished (keep three)

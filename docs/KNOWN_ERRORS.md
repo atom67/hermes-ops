@@ -75,3 +75,12 @@ Rules:
 **Status:** accepted limitation
 **Workaround:** `rarf/hermes-quota-plugin` covers 9 providers
 **Verification:** message text asserted by `test_unavailable_snapshot_renders_reason`
+
+### KE-2026-09-20-DESKTOP-USAGE-NO-LIMITS — Desktop `/usage` shows no account limits for openai-codex
+**Where:** Hermes Desktop 0.20.0 (backend v0.20.0), `/usage` slash command in chat
+**Introduced / detected:** detected 2026-09-20 by the owner during UC-001 acceptance (screenshot); matches upstream issues #45713 and #42904 (open)
+**Impact:** in Desktop the operator cannot see Codex Session/Weekly windows at all without this plugin — `/usage` prints "Session Token Usage" with zeros before any agent turn and no Account limits block
+**Cause:** upstream: the Desktop `/usage` no-agent path omits the account-usage fetch (per #42904 title); not investigated here
+**Status:** not fixed upstream; worked around by asking the agent (tool `account_usage`)
+**Workaround:** ask the agent in chat, or run `hermes -p <profile> usage`
+**Verification:** manual, regression R-06; candidate for an upstream bug report with this repro

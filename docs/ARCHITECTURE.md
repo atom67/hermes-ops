@@ -16,7 +16,10 @@ plugin version in `plugin/account-usage/plugin.yaml`.
 | Component | Responsibility | Depends on |
 |---|---|---|
 | `plugin.yaml` | manifest: name, version, description; loader gates it by `plugins.enabled` | Hermes plugin loader (`hermes_cli/plugins.py`) |
-| `__init__.py` → `register(ctx)` | registers tool `account_usage` (toolset `account_usage`) and CLI `hermes usage` | `ctx.register_tool`, `ctx.register_cli_command` |
+| `__init__.py` → `register(ctx)` | registers tool `account_usage(scope)`, slash command `/quota`, CLI `hermes usage` | `ctx.register_tool`, `ctx.register_command`, `ctx.register_cli_command` |
+| `usage_core.activity` | providers used in the last N days per profile, from `state.db` (`session_model_usage`, read-only `mode=ro`) | sqlite3 |
+| `usage_core.classify` / `extract_balance` / `breaches` | provider kind (windows / balance / spend), prepaid balance from host lines, threshold checks | pure |
+| `quota_watch.py` (optional) | cron `--no-agent` script: all-profiles report → breaches → print once per breach-set per day | `usage_core`, `state/quota_watch_state.json` |
 | `usage_core.pure` (`jwt_claims`, `pick_identity`, `find_jwts`, `snapshot_to_dict`, `render`) | testable transformations; no I/O | stdlib |
 | `usage_core.collectors` (`active_provider`, `codex_identity`, `usage_for`, `report`) | read host config + token store, call host fetchers; fail soft | `hermes_cli.config.load_config`, `hermes_cli.auth._read_codex_tokens` / `resolve_codex_runtime_credentials`, `agent.account_usage.fetch_account_usage` / `render_account_usage_lines` / `nous_credits_lines` |
 | `usage_core.all_profiles_reports` | one subprocess per profile with its own `HERMES_HOME` | `sys.executable`, `PYTHONPATH` = host package dir |
@@ -29,6 +32,11 @@ No tables. Report object (one per profile):
 | Field | Type | Notes |
 |---|---|---|
 | `profile` | string | profile directory name, or `default` |
+| `primary` | string \| null | the profile's `model.provider` |
+| `days` | int | activity window |
+| `providers[]` | block per provider: `provider`, `kind` (windows\|balance\|spend), `identity`, `usage`, `activity` | primary first, then providers seen in `state.db` |
+| `providers[].activity` | `{days, calls, models, billing_mode, spend_usd, cost_source, last_seen}` | `spend_usd` = actual if recorded else estimate; `last_seen` ISO-8601 local, minutes |
+| `providers[].usage.balance_usd` | number \| null | parsed from host lines (`Credits balance: $X`, `Total usable: $X`) |
 | `provider` | string \| null | `model.provider` of that profile or the `--provider` override |
 | `identity` | object | subset of `email`, `email_verified`, `name`, `chatgpt_plan_type`, `plan_type`, `chatgpt_account_id`; only for `openai-codex`; never tokens |
 | `usage.available` | bool | windows or details present and no `unavailable_reason` |

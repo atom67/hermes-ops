@@ -64,24 +64,80 @@ class SnapshotAndRender(unittest.TestCase):
         self.assertEqual(data["windows"][0]["reset_at"], "2026-09-19T15:24:00+00:00")
 
     def test_unavailable_snapshot_renders_reason(self):
-        text = uc.render({"profile": "p", "provider": "openai-codex", "identity": {},
-                          "usage": {"available": False, "unavailable_reason": "token_expired"}})
+        text = uc.render({"profile": "p", "providers": [{"provider": "openai-codex", "kind": "windows", "identity": {},
+                          "usage": {"available": False, "unavailable_reason": "token_expired"}}]})
         self.assertIn("unavailable (token_expired)", text)
 
     def test_render_prefers_core_lines_and_shows_identity(self):
-        text = uc.render({"profile": "mastermind", "provider": "openai-codex",
+        text = uc.render({"profile": "mastermind", "providers": [{"provider": "openai-codex", "kind": "windows",
                           "identity": {"email": "user@example.com", "chatgpt_plan_type": "plus"},
-                          "usage": {"available": True, "lines": ["Weekly: 16% remaining"]}})
-        self.assertEqual(text.splitlines(), ["Profile: mastermind · provider: openai-codex",
-                                             "Account: user@example.com (plus)", "Weekly: 16% remaining"])
+                          "usage": {"available": True, "lines": ["Weekly: 16% remaining"]},
+                          "activity": {"days": 7, "calls": 7, "models": {"gpt-5.6-terra": {"calls": 7, "usd": 0.0}},
+                                       "spend_usd": 0.0, "cost_source": "included in subscription"}}]})
+        self.assertEqual(text.splitlines(), ["Profile: mastermind",
+                                             "openai-codex [windows] · user@example.com (plus)",
+                                             "  Weekly: 16% remaining",
+                                             "  last 7d: 7 calls · included in subscription",
+                                             "    gpt-5.6-terra: 7 calls"])
+
+    def test_cost_label_and_spend_text(self):
+        self.assertEqual(uc.cost_label("subscription_included", 0.0, 0.0), "included in subscription")
+        self.assertEqual(uc.cost_label("", 0.0, 0.0), "no pricing data")
+        self.assertEqual(uc.cost_label("", 0.0, 0.98), "estimate, local accounting")
+        self.assertEqual(uc.cost_label("", 1.5, 9.9), "actual")
+        self.assertEqual(uc.spend_text({"cost_source": "no pricing data", "spend_usd": 0.0}), "cost n/a (no pricing data)")
+        self.assertEqual(uc.spend_text({"cost_source": "actual", "spend_usd": 1.5}), "$1.50 (actual)")
+        self.assertEqual(uc.classify("xai-oauth", {}, "codex_responses"), "windows")
 
     def test_render_never_leaks_tokens(self):
         token = fake_jwt({"email": "user@example.com"})
-        report = {"profile": "p", "provider": "openai-codex", "identity": uc.pick_identity(uc.jwt_claims(token)),
-                  "usage": {"available": False, "unavailable_reason": "offline"}}
+        report = {"profile": "p", "providers": [{"provider": "openai-codex", "kind": "windows",
+                  "identity": uc.pick_identity(uc.jwt_claims(token)),
+                  "usage": {"available": False, "unavailable_reason": "offline"}}]}
         self.assertNotIn(token, uc.render(report))
         self.assertNotIn(token, json.dumps(report))
 
 
-if __name__ == "__main__":
-    unittest.main()
+class KindsAndThresholds(unittest.TestCase):
+    S = dict(uc.DEFAULT_SETTINGS, budget_usd=20)
+
+    def test_classify_windows_balance_spend(self):
+        self.assertEqual(uc.classify("openai-codex", {"windows": [{"label": "Weekly"}]}), "windows")
+        self.assertEqual(uc.classify("anthropic", {}, "subscription_included"), "windows")
+        self.assertEqual(uc.classify("openrouter", {"details": ["Credits: $12.30"]}), "balance")
+        self.assertEqual(uc.classify("nous", {}), "balance")
+        self.assertEqual(uc.classify("gemini", {}), "spend")
+
+    def test_breach_weekly_below_floor_and_session_ok(self):
+        block = {"provider": "openai-codex", "kind": "windows",
+                 "usage": {"windows": [{"label": "Weekly", "used_percent": 90.0}, {"label": "Session", "used_percent": 50.0}]}}
+        out = uc.breaches(block, self.S)
+        self.assertEqual(len(out), 1)
+        self.assertIn("Weekly: 10% remaining (< 15%)", out[0])
+
+    def test_extract_balance_from_host_lines(self):
+        self.assertEqual(uc.extract_balance({"lines": ["Credits balance: $17.30", "x"]}), 17.30)
+        self.assertEqual(uc.extract_balance({"details": ["Total usable: $0.00"]}), 0.0)
+        self.assertEqual(uc.extract_balance({"lines": ["API key quota: 79% remaining"]}), None)
+
+    def test_breach_balance_and_spend_and_unavailable(self):
+        low = {"provider": "openrouter", "kind": "balance", "usage": {"balance_usd": 2.5}}
+        self.assertIn("balance $2.50", uc.breaches(low, self.S)[0])
+        spend = {"provider": "gemini", "kind": "spend", "usage": {}, "activity": {"spend_usd": 25.0}}
+        self.assertIn("spend $25.00", uc.breaches(spend, self.S)[0])
+        dead = {"provider": "openai-codex", "kind": "windows", "usage": {"unavailable_reason": "token_expired"}}
+        self.assertIn("token_expired", uc.breaches(dead, self.S)[0])
+        self.assertEqual(uc.breaches({"provider": "gemini", "kind": "spend", "usage": {}, "activity": {}}, self.S), [])
+        gap = {"provider": "xai-oauth", "kind": "windows", "usage": {"unavailable_reason": "not fetchable", "not_fetchable": True}}
+        self.assertEqual(uc.breaches(gap, self.S), [])
+
+    def test_render_all_lists_alerts_then_profiles(self):
+        reports = [{"profile": "a", "providers": [{"provider": "openai-codex", "kind": "windows",
+                    "usage": {"available": True, "lines": ["Weekly: 5% remaining"], "windows": [{"label": "Weekly", "used_percent": 95}]},
+                    "activity": {"days": 7, "calls": 3, "models": {"m": {"calls": 3, "usd": 0.0}}, "spend_usd": 0.0, "cost_source": "included in subscription"}}]},
+                   {"profile": "b", "providers": [], "error": "no such profile"}]
+        text = uc.render_all(reports, uc.DEFAULT_SETTINGS)
+        self.assertTrue(text.startswith("Account usage — 2 profile(s) · 1 alert(s)"))
+        self.assertIn("⚠ openai-codex Weekly: 5% remaining", text)
+        self.assertIn("Profile: a", text)
+        self.assertIn("Error: no such profile", text)

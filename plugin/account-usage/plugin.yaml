@@ -1,5 +1,5 @@
 name: account-usage
-version: 0.1.0
-description: "Account limits and identity in one call. Agent tool `account_usage` and CLI `hermes usage` for the active provider (openai-codex / anthropic / openrouter) of the current profile, or all profiles. Reuses the core account-usage fetchers; never prints tokens."
+version: 0.2.0
+description: "Account limits, prepaid balances and local spend across ALL Hermes profiles, in one call: agent tool `account_usage`, slash command `/quota [local|all|<profile>]`, CLI `hermes usage`. Providers active in the last 7 days are detected from state.db. Optional threshold watchdog as a cron job (Telegram/local delivery). Reuses the core account-usage fetchers; never prints tokens."
 author: "atom67"
 hooks: []
