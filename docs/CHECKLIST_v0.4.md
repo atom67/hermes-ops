@@ -33,7 +33,8 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 - [x] `node --check` ok; copied to profile and root `desktop-plugins/`
 - [x] owner screenshot 2026-09-20 14:19: one Codex card with bars (daria), mastermind says "same account as daria", xai-oauth muted
 - [x] focus strip on top (owner request): one row per deduped source, 5h and weekly % left coloured on a red->yellow->green hue, balance-only sources show the amount; details follow below
-- [ ] owner: Rescan, confirm the strip
+- [x] owner screenshot 16:04: strip renders (nous $0.00 red, codex 5h/wk, openrouter $17.30) — but data stale, see KE-2026-09-20-PANE-STALE-ON-UNREGISTERED-USAGE
+- [ ] owner: Rescan, press ↻, numbers must match the API (Session ≈41 %, Weekly ≈80 % at 17:42)
 
 ### 3. Documents
 - [x] README, REQUIREMENTS FR-011/012, USE_CASES UC-008 + SET-003, REGRESSION R-10/12/13, KNOWN_ERRORS, BACKLOG

@@ -11,9 +11,14 @@ const h = React.createElement
 const REFRESH_MS = 5 * 60 * 1000
 
 function parseJson(output) {
-  const start = Math.min(...['[', '{'].map(c => output.indexOf(c)).filter(i => i >= 0))
-  if (!Number.isFinite(start)) throw new Error('no JSON in output: ' + output.slice(0, 200))
-  return JSON.parse(output.slice(start))
+  // The JSON report starts at the first line that is exactly "[" or "{"; anything before it is host chatter
+  // (an argparse "usage: hermes [-h] ..." line when the `usage` command is not registered in the active profile).
+  const lines = output.split(/\r?\n/)
+  const start = lines.findIndex(l => l.trim() === '[' || l.trim() === '{')
+  if (start < 0) throw new Error(/usage: hermes/.test(output)
+    ? 'the `usage` command is not registered in the active profile — run install.py --profile <active> (or --global) and restart Desktop'
+    : 'no JSON in output: ' + output.slice(0, 200))
+  return JSON.parse(lines.slice(start).join('\n'))
 }
 
 async function fetchReports(scope) {
@@ -151,7 +156,8 @@ function Pane() {
       h('span', { className: 'flex-1' }),
       h(Button, { size: 'sm', variant: 'ghost', disabled: state.loading, onClick: () => load(scope) }, state.loading ? '…' : '↻')),
     state.at ? h('div', { className: 'text-[11px] text-muted-foreground' }, `updated ${state.at.toLocaleTimeString()}`) : null,
-    state.error ? h('div', { className: 'rounded border border-red-500/40 p-2 text-xs text-red-500' }, state.error) : null,
+    state.error ? h('div', { className: 'rounded border border-red-500/40 p-2 text-xs text-red-500' }, state.error,
+      state.reports.length ? ' — showing the last good snapshot' : '') : null,
     h(FocusStrip, { reports: state.reports }),
     alerts.length ? h('div', { className: 'rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs' },
       ...alerts.map((a, i) => h('div', { key: i }, '⚠ ', a))) : null,

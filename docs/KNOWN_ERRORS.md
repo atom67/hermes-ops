@@ -85,6 +85,13 @@ Rules:
 **Workaround:** ask the agent in chat, or run `hermes -p <profile> usage`
 **Verification:** manual, regression R-06; candidate for an upstream bug report with this repro
 
+### KE-2026-09-20-PANE-STALE-ON-UNREGISTERED-USAGE — pane froze at "100% left" with `No number after minus sign in JSON at position 2`
+
+- **Symptom (owner, 2026-09-20 16:04):** the pane kept showing Session 100 % / Weekly 89 % for an hour while the API said 41 % / 80 %; a red line `No number after minus sign in JSON at position 2 (line 1 column 3)` sat above a stale snapshot.
+- **Mechanism:** `cli.exec` runs `hermes usage --json` in the Desktop's *active* profile. When that profile has no `account-usage` plugin (owner switched to a profile where it was not installed), the CLI prints argparse help `usage: hermes [-h] ...`; the old `parseJson` cut at the first `[` (= `[-h]`) and failed. The pane kept the last good reports and showed them as if current.
+- **Fix:** `parseJson` starts at the first line that is exactly `[`/`{` and names the real cause (`usage` command not registered in the active profile); the error line now says "showing the last good snapshot". Plugin installed into every local home (`--profile mastermind --profile daria --global`) so `usage` exists whichever profile is active.
+- **Watch for:** a new profile created later — run the installer for it, or the pane will say so.
+
 ### KE-2026-09-20-CRON-BARE-INTERVAL-ONE-SHOT — `hermes cron create 60m` is a one-shot delay, not a schedule
 
 - **Symptom:** the watchdog job showed `Schedule: once in 60m, Repeat: 0/1` — it would have run once and vanished.
