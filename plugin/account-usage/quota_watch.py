@@ -40,8 +40,13 @@ def main() -> int:
     home = _home()
     uc = _core(home)
     settings = uc.load_settings()
-    reports = uc.all_profiles_reports(days=settings["days"])
-    alerts = sorted(line for r in reports for b in (r.get("providers") or []) for line in uc.breaches(b, settings))
+    scope = "profile" if str(settings.get("watch_scope") or "all").lower() == "profile" else "all"
+    reports = [uc.report(days=settings["days"])] if scope == "profile" \
+        else uc.dedupe(uc.all_profiles_reports(days=settings["days"]))
+    top = settings.get("watch_top") or uc.DEFAULT_WATCH_TOP[scope]
+    targets = set(uc.watch_targets(reports, top))
+    alerts = sorted(f"{r.get('profile')}/{line}" for r in reports for b in (r.get("providers") or [])
+                    if b["provider"] in targets for line in uc.breaches(b, settings))
     state_path = home / "state" / STATE_FILE
     state = {}
     try:
@@ -59,7 +64,7 @@ def main() -> int:
         return 0  # already reported today — stay silent
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps({"alerts": alerts, "sent_at": time.time()}), encoding="utf-8")
-    print("⚠ Quota watch — " + time.strftime("%Y-%m-%d %H:%M"))
+    print(f"⚠ Quota watch ({scope}, top {top}: {', '.join(sorted(targets))}) — " + time.strftime("%Y-%m-%d %H:%M"))
     for line in alerts:
         print("• " + line)
     return 0

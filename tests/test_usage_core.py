@@ -138,6 +138,39 @@ class KindsAndThresholds(unittest.TestCase):
                    {"profile": "b", "providers": [], "error": "no such profile"}]
         text = uc.render_all(reports, uc.DEFAULT_SETTINGS)
         self.assertTrue(text.startswith("Account usage — 2 profile(s) · 1 alert(s)"))
-        self.assertIn("⚠ openai-codex Weekly: 5% remaining", text)
+        self.assertIn("⚠ a/openai-codex Weekly: 5% remaining", text)
         self.assertIn("Profile: a", text)
         self.assertIn("Error: no such profile", text)
+
+    def test_per_provider_balance_floor_in_credits_or_usd(self):
+        nous = {"provider": "nous", "kind": "balance", "usage": {"balance_usd": 50.0}}
+        self.assertEqual(uc.breaches(nous, self.S), [])                       # default floor 5
+        self.assertIn("balance $50.00 (< $100)", uc.breaches(nous, {**self.S, "balance_min": {"nous": 100}})[0])
+
+    def test_dedupe_marks_identical_quota_and_mutes_its_alerts(self):
+        codex = {"provider": "openai-codex", "kind": "windows", "identity": {"chatgpt_account_id": "acc"},
+                 "usage": {"available": True, "windows": [{"label": "Weekly", "used_percent": 95}]},
+                 "activity": {"days": 7, "calls": 10}}
+        reports = [{"profile": "a", "providers": [codex]},
+                   {"profile": "b", "providers": [{**codex, "activity": {"days": 7, "calls": 30}}]},
+                   {"profile": "c", "providers": [{**codex, "usage": {"available": True, "windows": [{"label": "Weekly", "used_percent": 10}]}}]}]
+        out = uc.dedupe(reports)
+        self.assertNotIn("same_as", out[0]["providers"][0])
+        self.assertEqual(out[1]["providers"][0]["same_as"], "a")
+        self.assertNotIn("same_as", out[2]["providers"][0])                     # different numbers = different account
+        self.assertEqual(out[1]["providers"][0]["activity"]["calls"], 30)        # activity stays per profile
+        self.assertEqual(uc.breaches(out[1]["providers"][0], self.S), [])
+        self.assertIs(reports[1]["providers"][0].get("same_as"), None)          # input untouched
+        text = uc.render_all(reports, self.S)
+        self.assertEqual(text.count("⚠ "), 1)
+        self.assertIn("same account as profile 'a'", text)
+
+    def test_watch_targets_top_n_or_all(self):
+        reports = [{"profile": "a", "providers": [{"provider": "openai-codex", "activity": {"calls": 5}},
+                                                  {"provider": "nous", "activity": {"calls": 0}}]},
+                   {"profile": "b", "providers": [{"provider": "openrouter", "activity": {"calls": 3}},
+                                                  {"provider": "openai-codex", "activity": {"calls": 4}}]}]
+        self.assertEqual(uc.watch_targets(reports, 2), ["openai-codex", "openrouter"])
+        self.assertEqual(uc.watch_targets(reports, 4), ["openai-codex", "openrouter"])  # idle providers are not channels
+        self.assertEqual(uc.watch_targets(reports, "all"), ["openai-codex", "openrouter", "nous"])
+        self.assertEqual(uc.watch_targets(reports, None), ["openai-codex", "openrouter", "nous"])

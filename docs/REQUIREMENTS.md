@@ -27,7 +27,9 @@ Numbers are permanent and unique; superseded ones are struck through, never reus
 | FR-005 | Optional threshold watchdog (weekly/session %, balance $, spend budget) as a cron job with Telegram/local delivery; silent unless breached. | done (v0.2, opt-in) |
 | FR-007 | Slash command `/quota [local\|all\|<profile>] [--days N]` in every chat surface, no model turn. | done (v0.2) |
 | FR-008 | Providers active in the last N days (from `state.db`) are included automatically with calls, models and spend. | done (v0.2) |
-| FR-010 | A Desktop pane shows the multi-profile report with full-contrast UI (bars, alerts, per-model activity), fetched without a chat session. | done (v0.3, awaiting acceptance) |
+| FR-010 | A Desktop pane shows the multi-profile report with full-contrast UI (bars, alerts, per-model activity), fetched without a chat session. | done (v0.3, accepted) |
+| FR-011 | The watchdog has two modes: `profile` (this profile's top-N most-used providers of the last week, default 2) and `all` (top-N across every profile, default 4); N is configurable, `all` watches every provider; paid providers get a per-provider balance floor in the unit they report (USD or credits). | done (v0.4) |
+| FR-012 | In the multi-profile report an account whose remote numbers are identical to one already shown (same provider, identity and limits) is not repeated: the block says `same account as profile X` and keeps only its own activity; alerts fire once per account. | done (v0.4) |
 | FR-009 | Each provider block carries a kind — windows / balance / spend — with matching numbers and thresholds; no invented percentages for pay-as-you-go providers. | done (v0.2) |
 | FR-006 | History of snapshots for trend view. | idea — not agreed |
 

@@ -35,7 +35,8 @@ DESKTOP_SRC = Path(__file__).resolve().parent / "desktop" / PLUGIN_NAME
 WATCH_SCRIPT = "quota_watch.py"
 JOB_NAME = "quota-watch"
 SETTING_KEYS = {"weekly": "weekly_min_percent", "session": "session_min_percent",
-                "balance_usd": "balance_min_usd", "budget_usd": "budget_usd", "days": "days"}
+                "balance_usd": "balance_min_usd", "budget_usd": "budget_usd", "days": "days",
+                "watch_scope": "watch_scope", "watch_top": "watch_top"}
 
 
 def hermes_root() -> Path:
@@ -109,16 +110,24 @@ def setup_watchdog(home: Path, profile: str | None, args) -> None:
         if val is not None:
             r = hermes(profile, "config", "set", f"plugins.entries.{PLUGIN_NAME}.settings.{key}", str(val), "--force")
             print(f"  setting {key}={val}: {'ok' if r.returncode == 0 else (r.stderr or r.stdout).strip()[-200:]}")
+    for item in args.balance_min:  # PROVIDER=AMOUNT, in the unit the provider reports (USD or credits)
+        prov, _, amount = item.partition("=")
+        r = hermes(profile, "config", "set", f"plugins.entries.{PLUGIN_NAME}.settings.balance_min.{prov.strip()}",
+                   amount.strip(), "--force")
+        print(f"  balance floor {prov.strip()}={amount.strip()}: {'ok' if r.returncode == 0 else (r.stderr or r.stdout).strip()[-200:]}")
     scripts = home / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     shutil.copy2(SRC / WATCH_SCRIPT, scripts / WATCH_SCRIPT)
     if JOB_NAME in hermes(profile, "cron", "list").stdout:
         print(f"  cron job '{JOB_NAME}' already exists — not recreated (edit with `hermes cron edit`)")
         return
-    r = hermes(profile, "cron", "create", args.watchdog, "--name", JOB_NAME, "--script", WATCH_SCRIPT,
+    every = args.watchdog.strip()
+    if re.fullmatch(r"\d+[smhd]", every):
+        every = "every " + every  # a bare '60m' is a ONE-SHOT delay in Hermes cron; recurring needs 'every 60m'
+    r = hermes(profile, "cron", "create", every, "--name", JOB_NAME, "--script", WATCH_SCRIPT,
                "--no-agent", "--deliver", args.deliver)
     status = "created" if r.returncode == 0 else (r.stderr or r.stdout).strip()[-300:]
-    print(f"  cron job '{JOB_NAME}' every {args.watchdog}, deliver={args.deliver}: {status}")
+    print(f"  cron job '{JOB_NAME}' ({every}), deliver={args.deliver}: {status}")
 
 
 def install_desktop(home: Path, root: Path, uninstall: bool) -> None:
@@ -161,6 +170,12 @@ def main() -> None:
     ap.add_argument("--budget-usd", dest="budget_usd", type=float,
                     help="alert when pay-as-you-go spend over the window > $X (off by default)")
     ap.add_argument("--days", type=int, help="activity window in days (default 7)")
+    ap.add_argument("--watch-scope", dest="watch_scope", choices=["profile", "all"],
+                    help="watchdog follows this profile's top channels or the top channels across all profiles (default all)")
+    ap.add_argument("--watch-top", dest="watch_top",
+                    help="how many most-used providers the watchdog follows: N or 'all' (default 2 for profile, 4 for all)")
+    ap.add_argument("--balance-min", dest="balance_min", action="append", default=[], metavar="PROVIDER=AMOUNT",
+                    help="per-provider balance floor in USD or credits, e.g. nous=100 (repeatable)")
     ap.add_argument("--no-desktop", action="store_true", help="skip the Desktop pane (desktop-plugins/)")
     args = ap.parse_args()
     root = hermes_root()

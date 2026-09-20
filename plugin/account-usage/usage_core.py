@@ -32,7 +32,12 @@ PROFILE_TIMEOUT_SECONDS = 40
 DEFAULT_DAYS = 7
 PLUGIN_ID = "account-usage"
 DEFAULT_SETTINGS = {"days": DEFAULT_DAYS, "weekly_min_percent": 15, "session_min_percent": 10,
-                    "balance_min_usd": 5.0, "budget_usd": None}
+                    "balance_min_usd": 5.0, "balance_min": {}, "budget_usd": None,
+                    "watch_scope": "all", "watch_top": None}
+# balance_min: per-provider floor in the unit the provider reports (USD or credits), e.g. {"nous": 100}.
+# watch_scope: "profile" (this profile's top channels) | "all" (top channels across every profile).
+# watch_top: how many most-used providers the watchdog follows; None = default per scope; "all" = every one.
+DEFAULT_WATCH_TOP = {"profile": 2, "all": 4}
 
 
 # ---------------------------------------------------------------- pure helpers
@@ -149,6 +154,8 @@ def classify(provider: str, usage: Dict[str, Any], billing_mode: str = "") -> st
 def breaches(block: Dict[str, Any], settings: Dict[str, Any]) -> List[str]:
     """Threshold violations for one provider block, as human lines. Pure."""
     out: List[str] = []
+    if block.get("same_as"):
+        return out  # identical account already checked under another profile
     usage = block.get("usage") or {}
     kind = block.get("kind")
     if usage.get("unavailable_reason") and kind != "spend" and not usage.get("not_fetchable"):
@@ -164,14 +171,58 @@ def breaches(block: Dict[str, Any], settings: Dict[str, Any]) -> List[str]:
                 out.append(f"{block['provider']} {label}: {100 - float(used):.0f}% remaining (< {floor}%)")
     if kind != "spend":
         bal = usage.get("balance_usd")
-        if bal is not None and float(bal) < float(settings["balance_min_usd"]):
-            out.append(f"{block['provider']}: balance ${float(bal):.2f} (< ${settings['balance_min_usd']})")
+        floor = (settings.get("balance_min") or {}).get(block["provider"], settings["balance_min_usd"])
+        if bal is not None and float(bal) < float(floor):
+            out.append(f"{block['provider']}: balance ${float(bal):.2f} (< ${floor})")
     if kind == "spend":
         budget = settings.get("budget_usd")
         spent = (block.get("activity") or {}).get("spend_usd")
         if budget and spent is not None and float(spent) > float(budget):
             out.append(f"{block['provider']}: spend ${float(spent):.2f} over {settings['days']}d (> ${budget})")
     return out
+
+
+def _quota_signature(block: Dict[str, Any]) -> Optional[str]:
+    """Same provider + same remote numbers = same account; None when there is nothing remote to compare."""
+    usage = block.get("usage") or {}
+    remote = {k: usage.get(k) for k in ("windows", "lines", "details", "balance_usd") if usage.get(k)}
+    if not remote:
+        return None
+    ident = block.get("identity") or {}
+    who = ident.get("chatgpt_account_id") or ident.get("email") or ""
+    return json.dumps([block.get("provider"), who, remote], sort_keys=True, default=str)
+
+
+def dedupe(reports: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Mark provider blocks whose quota is identical to one shown earlier: ``same_as = <profile>``.
+    Activity stays per profile; only the remote numbers are shared. Returns new reports."""
+    seen: Dict[str, str] = {}
+    out = []
+    for r in reports:
+        blocks = []
+        for b in r.get("providers") or []:
+            sig = _quota_signature(b)
+            if sig and sig in seen:
+                blocks.append({**b, "same_as": seen[sig]})
+            else:
+                if sig:
+                    seen[sig] = str(r.get("profile"))
+                blocks.append(b)
+        out.append({**r, "providers": blocks})
+    return out
+
+
+def watch_targets(reports: List[Dict[str, Any]], top: Any) -> List[str]:
+    """Providers ranked by calls across the given reports; the first ``top`` of them.
+    ``"all"``/None = every provider, including idle ones; a number = only providers used in the window."""
+    calls: Dict[str, int] = {}
+    for r in reports:
+        for b in r.get("providers") or []:
+            calls[b["provider"]] = calls.get(b["provider"], 0) + int((b.get("activity") or {}).get("calls") or 0)
+    ranked = sorted(calls, key=lambda p: -calls[p])
+    if top in (None, "all", "", 0):
+        return ranked
+    return [p for p in ranked if calls[p] > 0][: int(top)]
 
 
 def render_block(block: Dict[str, Any]) -> List[str]:
@@ -184,7 +235,9 @@ def render_block(block: Dict[str, Any]) -> List[str]:
         head += f" · {who}" + (f" ({plan})" if plan else "")
     lines.append(head)
     usage = block.get("usage") or {}
-    if usage.get("lines"):
+    if block.get("same_as"):
+        lines.append(f"  same account as profile '{block['same_as']}' — limits shown there")
+    elif usage.get("lines"):
         lines.extend("  " + str(line) for line in usage["lines"])
     elif usage.get("available"):
         for w in usage.get("windows") or []:
@@ -218,7 +271,9 @@ def render(report: Dict[str, Any]) -> str:
 
 def render_all(reports: List[Dict[str, Any]], settings: Optional[Dict[str, Any]] = None) -> str:
     settings = settings or DEFAULT_SETTINGS
-    alerts = [line for r in reports for b in (r.get("providers") or []) for line in breaches(b, settings)]
+    reports = dedupe(reports)
+    alerts = [f"{r.get('profile')}/{line}" for r in reports for b in (r.get("providers") or [])
+              for line in breaches(b, settings)]
     head = [f"Account usage — {len(reports)} profile(s)" + (f" · {len(alerts)} alert(s)" if alerts else " · no alerts")]
     head += ["  ⚠ " + a for a in alerts]
     return "\n".join(head) + "\n\n" + "\n\n".join(render(r) for r in reports)
@@ -410,6 +465,7 @@ def run(scope: str = "all", provider: Optional[str] = None, days: Optional[int] 
         reports = all_profiles_reports(provider, days, only=None if scope == "all" else scope)
         if not reports:
             reports = [{"profile": scope, "providers": [], "error": "no such profile"}]
+        reports = dedupe(reports)
     if as_json:
         return json.dumps(reports[0] if scope == "local" else reports, ensure_ascii=False, indent=2)
     return render(reports[0]) if scope == "local" else render_all(reports, load_settings())

@@ -63,12 +63,14 @@ function ProviderBlock({ b }) {
       h('span', { className: 'font-medium' }, b.provider),
       h('span', { className: 'text-[11px] uppercase tracking-wide text-muted-foreground' }, b.kind)),
     who ? h('div', { className: 'text-xs text-muted-foreground' }, who, plan ? ` · ${plan}` : '') : null,
-    ...(usage.windows || []).map((w, i) => h(WindowBar, { key: i, w })),
-    !(usage.windows || []).length && usage.balance_usd != null
+    b.same_as ? h('div', { className: 'text-xs text-muted-foreground italic' }, `same account as ${b.same_as} — limits shown there`) : null,
+    ...(b.same_as ? [] : usage.windows || []).map((w, i) => h(WindowBar, { key: i, w })),
+    !b.same_as && !(usage.windows || []).length && usage.balance_usd != null
       ? h('div', { className: 'text-sm' }, `Balance: $${Number(usage.balance_usd).toFixed(2)}`) : null,
-    ...balanceLines.slice(0, 3).map((l, i) => h('div', { key: 'l' + i, className: 'text-xs text-muted-foreground' }, l)),
-    usage.unavailable_reason && !usage.windows?.length && b.kind !== 'spend'
-      ? h('div', { className: 'text-xs text-amber-500' }, `unavailable: ${usage.unavailable_reason}`) : null,
+    ...(b.same_as ? [] : balanceLines.slice(0, 3)).map((l, i) => h('div', { key: 'l' + i, className: 'text-xs text-muted-foreground' }, l)),
+    !b.same_as && usage.unavailable_reason && !usage.windows?.length && b.kind !== 'spend'
+      ? h('div', { className: `text-xs ${usage.not_fetchable ? 'text-muted-foreground' : 'text-amber-500'}` },
+          usage.not_fetchable ? 'limits not fetchable in this Hermes version' : `unavailable: ${usage.unavailable_reason}`) : null,
     act.calls != null ? h('div', { className: 'text-xs text-muted-foreground' },
       `last ${act.days}d: ${act.calls} calls · ${act.cost_source === 'included in subscription' ? 'subscription'
         : act.cost_source === 'no pricing data' ? 'cost n/a' : `≈$${Number(act.spend_usd || 0).toFixed(2)}`}`,
@@ -78,6 +80,7 @@ function ProviderBlock({ b }) {
 function alertsOf(reports) {
   const out = []
   for (const r of reports) for (const b of r.providers || []) {
+    if (b.same_as) continue
     const u = b.usage || {}
     for (const w of u.windows || []) if (w.used_percent != null && 100 - w.used_percent < 15) out.push(`${r.profile}/${b.provider} ${w.label}: ${pct(100 - w.used_percent)} left`)
     if (u.balance_usd != null && u.balance_usd < 5) out.push(`${r.profile}/${b.provider}: balance $${Number(u.balance_usd).toFixed(2)}`)

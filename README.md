@@ -6,8 +6,8 @@ solved a real problem here, with the measurement that motivated it.
 
 | Entry | Status |
 |---|---|
-| [`plugin/account-usage`](plugin/account-usage) — account limits, balances and spend across profiles for the agent, the chat (`/quota`) and the shell | v0.3, tested on Hermes v0.20.0 |
-| [`desktop/account-usage`](desktop/account-usage) — Hermes Desktop pane for the same data (progress bars, alerts, per-model activity) | v0.3, awaiting owner acceptance |
+| [`plugin/account-usage`](plugin/account-usage) — account limits, balances and spend across profiles for the agent, the chat (`/quota`) and the shell | v0.4, tested on Hermes v0.20.0 |
+| [`desktop/account-usage`](desktop/account-usage) — Hermes Desktop pane for the same data (progress bars, alerts, per-model activity) | v0.4, pane accepted 2026-09-20 |
 
 ---
 
@@ -49,6 +49,7 @@ Providers the host cannot fetch render `unavailable (<reason>)`; nothing raises.
 ```bash
 python install.py --profile mastermind            # plugin only, lists providers seen in 7 days
 python install.py --profile mastermind --watchdog 60m --deliver telegram --weekly 15 --balance-usd 5
+python install.py --profile mastermind --watchdog 60m --deliver local --watch-scope all --watch-top 4 --balance-min nous=100
 ```
 
 Copies `plugin/account-usage/` into `<HERMES_HOME>/plugins/`, adds `account-usage` to
@@ -59,6 +60,15 @@ Settings → Plugins → Rescan is enough (runtime plugins hot-reload). The watc
 prints only on a threshold breach, once per breach-set per day; `--deliver telegram` pushes via
 the profile's bot, `local` keeps it in cron output. Thresholds live in
 `plugins.entries.account-usage.settings.*` (`hermes config set …`).
+
+Two watchdog modes: `--watch-scope profile` follows this profile's `--watch-top` most-used providers of the
+last week (default 2); `--watch-scope all` (default) follows the top providers across every profile (default 4).
+`--watch-top all` watches every provider, idle ones included. Paid providers get their own floor in the unit
+they report — dollars or credits — with `--balance-min PROVIDER=AMOUNT` (repeatable); `--balance-usd` stays
+the default for the rest.
+
+One account used by several profiles (e.g. one ChatGPT Plus login) is shown once: the later block says
+`same account as profile X — limits shown there` and keeps only its own activity; alerts fire once per account.
 
 Uninstall: `python install.py --profile mastermind --uninstall` (then drop the config line and cron job).
 

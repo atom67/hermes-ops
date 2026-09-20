@@ -85,6 +85,13 @@ Rules:
 **Workaround:** ask the agent in chat, or run `hermes -p <profile> usage`
 **Verification:** manual, regression R-06; candidate for an upstream bug report with this repro
 
+### KE-2026-09-20-CRON-BARE-INTERVAL-ONE-SHOT — `hermes cron create 60m` is a one-shot delay, not a schedule
+
+- **Symptom:** the watchdog job showed `Schedule: once in 60m, Repeat: 0/1` — it would have run once and vanished.
+- **Mechanism:** Hermes cron parses a bare `30m`/`2h` as "run once in"; recurring needs `every 60m` or a cron expression (`hermes cron create --help`).
+- **Fix:** `install.py` normalises a bare `\d+[smhd]` to `every <interval>`; cron expressions and `every …` pass through unchanged. Verified: `Repeat: ∞`.
+- **Watch for:** any other `cron create` call in scripts/docs using a bare interval.
+
 ### KE-2026-09-20-DESKTOP-SLASH-OUTPUT-DIM — Desktop renders every slash-command result at 11px and 60 % opacity
 **Where:** Hermes Desktop 0.20.0, `apps/desktop/src/components/assistant-ui/thread/system-message.tsx:47-49` (`text-[0.6875rem] text-muted-foreground/60 w-[60%]`)
 **Introduced / detected:** detected 2026-09-20 by the owner (`/usage` and `/quota` output barely readable)

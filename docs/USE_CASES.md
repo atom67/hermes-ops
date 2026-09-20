@@ -74,7 +74,7 @@ it.
 | ID | Setting | Where configured | Required / optional | Enables |
 |---|---|---|---|---|
 | SET-001 | Plugin installed and enabled: `python install.py --profile <name>` copies `plugin/account-usage` to `<HERMES_HOME>/plugins/` and adds `account-usage` to `plugins.enabled`; restart the profile's gateway/TUI/Desktop | project root / profile `config.yaml` | required | UC-001, UC-002, UC-003, UC-004, UC-005, UC-006 |
-| SET-003 | Watchdog (optional): `python install.py --profile <name> --watchdog 60m --deliver telegram\|local [--weekly N --session N --balance-usd X --budget-usd Y --days N]` — creates cron job `quota-watch` and stores thresholds in `plugins.entries.account-usage.settings` | installer / `hermes config set` / `hermes cron` | optional | UC-006 |
+| SET-003 | Watchdog (optional): `python install.py --profile <name> --watchdog 60m --deliver telegram\|local [--watch-scope profile\|all] [--watch-top N\|all] [--balance-min PROVIDER=AMOUNT …] [--weekly N --session N --balance-usd X --budget-usd Y --days N]` — creates cron job `quota-watch` (`every 60m`; a bare `60m` is normalised, see KE-2026-09-20-CRON-BARE-INTERVAL-ONE-SHOT) and stores thresholds in `plugins.entries.account-usage.settings` (`watch_scope`, `watch_top`, `balance_min.<provider>`) | installer / `hermes config set` / `hermes cron` | optional | UC-006, UC-008 |
 | SET-004 | Desktop pane: `desktop/account-usage/plugin.js` copied to `<HERMES_HOME>/desktop-plugins/account-usage/` (installer does it; `--no-desktop` skips) | installer | optional | UC-007 |
 | SET-002 | Provider login of the profile (`hermes -p <name> auth login openai-codex` etc.) — the plugin reads the resulting token store, it never logs in itself | Hermes auth | required for limits; without it the report says `unavailable` | UC-001, UC-002, UC-003, UC-004 |
 
@@ -142,6 +142,17 @@ account is in use and how much quota remains, in one step, without reading sourc
 - **Flow:** all-profiles report → `breaches()` against `plugins.entries.account-usage.settings` → prints only on a breach, once per breach-set per 24 h (state in `state/quota_watch_state.json`), plus one "all clear" line when the breach clears → cron delivers non-empty stdout to the chosen target.
 - **Outcome (value / function achieved):** the operator learns about a dying token, an exhausted weekly window or a depleted balance without asking; no pushes when nothing changed.
 - **Test:** NFV (cron scheduling, delivery) — manual R-10; threshold logic covered by `test_breach_*`.
+- **Modes (v0.4, FR-011):** `watch_scope: profile` — the report of this profile only, the `watch_top` (default 2) providers with most calls in the window; `watch_scope: all` — every profile, deduplicated (UC-008), top `watch_top` (default 4) providers by calls across profiles; `watch_top: all` watches every provider including idle ones. Per-provider balance floors: `balance_min.<provider>` in the unit the provider reports (`--balance-min nous=100`).
+
+#### UC-008 — One account, many profiles: the report shows it once
+
+- **Trigger:** Automatic — every `all`/`<profile>` scope report and the `all` watchdog.
+- **Actor:** `dedupe()` in `usage_core.py`.
+- **Preconditions:** two profiles logged into the same account (e.g. one ChatGPT Plus used by `daria` and `mastermind`).
+- **Flow:** reports → signature per block (provider, identity id/email, remote windows/lines/balance) → the second identical block gets `same_as: <first profile>` → text says `same account as profile X — limits shown there`, the pane shows the same italic line, `breaches()` skips it; activity (calls, models, spend) stays per profile.
+- **Outcome (value / function achieved):** one Codex block with bars instead of two identical ones; one alert per account instead of one per profile.
+- **Test:** `test_dedupe_marks_identical_quota_and_mutes_its_alerts`; live: R-12.
+
 
 #### UC-007 — Readable report in the Desktop UI
 
@@ -164,6 +175,7 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-004 | needs a running chat surface (Desktop/TUI/gateway) | manual R-07 + in-process handler check R-08 | `/quota` must never call the model |
 | UC-006 | cron scheduling and delivery are host behaviour | manual R-10 | silent when nothing breached; one message per breach-set per day |
 | UC-007 | Electron UI rendering | manual R-11 | pane must never block the app: every fetch error renders inline |
+| UC-008 | needs two real profiles on one account | `test_dedupe_*` + manual R-12 | different numbers = different account: never merge on provider name alone |
 
 ## Traceability
 
@@ -176,3 +188,4 @@ account is in use and how much quota remains, in one step, without reading sourc
 | UC-005 | Automatic | FR-008, FR-009 | `usage_core.activity`, `classify`, `extract_balance` | covered |
 | UC-006 | Automatic | FR-005 | `quota_watch.py`, `install.py` | NFV |
 | UC-007 | Interactive | FR-010 | `desktop/account-usage/plugin.js` | NFV |
+| UC-008 | Automatic | FR-012 | `usage_core.py` `dedupe()` | `test_dedupe_marks_identical_quota_and_mutes_its_alerts` |
