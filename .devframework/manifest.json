@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": "0.2.1",
+  "version": "0.3.0",
   "parameters": {
     "name": "Hermes Account Usage Plugin",
     "count": 1000,
@@ -17,7 +17,15 @@
       "ownership": "framework"
     },
     ".devframework/check.py": {
-      "sha256": "1ca2e5c18f0dffec231bc3de023ae7b98423ad08607d6ade9d6e95bb1daf7f26",
+      "sha256": "c08fdd01a859e54ab45a1e217042a1c1c9b183cad8f2bfade4b05579cb29a447",
+      "ownership": "framework"
+    },
+    ".devframework/DEVLOG.md": {
+      "sha256": "e465602e86a2de90b8cc253666050e8807a4dca8e51d17da5acf615e267a41ce",
+      "ownership": "framework"
+    },
+    ".devframework/devlog.py": {
+      "sha256": "df010723de22fe613247f602e5bb125ae0cdef9460166ef9070616083aa9c915",
       "ownership": "framework"
     },
     ".devframework/KNOWLEDGE_MAP.md": {
@@ -97,11 +105,11 @@
       "ownership": "framework"
     },
     ".devframework/verification.py": {
-      "sha256": "bdb03246298dcbaf43ef75bbcb6823a27713dec0d58d69eddc527c66e90b1de7",
+      "sha256": "dcd4da7e4cb0023ee73de98d27c4f15385ebb798f68e6e5f70ced607776dea2d",
       "ownership": "framework"
     },
     "AGENTS.md": {
-      "sha256": "6a7ae1d003c1cfa2524645573630214fd7c5d0f7c061c4453df45e28f33bf7bb",
+      "sha256": "9a0a4eb408b24ea3f4213ee8c50266fe2d210105f71cc8f65dab689b5e0a7b72",
       "ownership": "framework"
     },
     "CLAUDE.md": {
@@ -165,7 +173,7 @@
       "ownership": "framework"
     },
     ".devframework/project.json": {
-      "sha256": "f7a39ac8e7d57ad37385e2f342b6299647a3eae0793fb4d4ae06ea5c516ad272",
+      "sha256": "33aed1eb5ce705916c2d920291c548bd5c342280b47e0f0ae6bfa401dcbd2132",
       "ownership": "project"
     }
   }
