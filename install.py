@@ -158,7 +158,7 @@ def install(home: Path, uninstall: bool) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--profile", action="append", default=[], help="profile name (repeatable)")
+    ap.add_argument("--profile", action="append", default=[], help="profile name (repeatable); default: every home")
     ap.add_argument("--global", dest="global_", action="store_true", help="install into the root hermes home")
     ap.add_argument("--uninstall", action="store_true")
     ap.add_argument("--watchdog", metavar="EVERY", help="enable the watchdog cron job, e.g. 60m or '0 * * * *'")
@@ -180,8 +180,9 @@ def main() -> None:
     args = ap.parse_args()
     root = hermes_root()
     homes = [root / "profiles" / p for p in args.profile] + ([root] if args.global_ else [])
-    if not homes:
-        ap.error("give --profile NAME and/or --global")
+    if not homes:  # default: every home, so `usage` exists whichever profile Desktop has active (KE-…-PANE-STALE…)
+        homes = [root] + sorted(p for p in (root / "profiles").glob("*") if (p / "config.yaml").exists())
+        print("No --profile/--global given: installing into every home: " + ", ".join(h.name for h in homes))
     for home in homes:
         install(home, args.uninstall)
         if not args.no_desktop:

@@ -47,7 +47,8 @@ Providers the host cannot fetch render `unavailable (<reason>)`; nothing raises.
 ## Install (plug-and-play)
 
 ```bash
-python install.py --profile mastermind            # plugin only, lists providers seen in 7 days
+python install.py                                 # every home (root + all profiles) — recommended for Desktop
+python install.py --profile mastermind            # one profile only, lists providers seen in 7 days
 python install.py --profile mastermind --watchdog 60m --deliver telegram --weekly 15 --balance-usd 5
 python install.py --profile mastermind --watchdog 60m --deliver local --watch-scope all --watch-top 4 --balance-min nous=100
 ```
