@@ -38,6 +38,46 @@ function resetIn(iso) {
 
 function tone(remaining) { return remaining < 15 ? 'bg-red-500' : remaining < 35 ? 'bg-amber-500' : 'bg-emerald-500' }
 
+// Focus strip: one row per LLM source (deduped), session (5h) and weekly % left on a red->yellow->green scale.
+function hue(remaining) { return `hsl(${Math.round(Math.max(0, Math.min(100, remaining)) * 1.2)} 80% 45%)` }
+
+function sourcesOf(reports) {
+  const out = []
+  for (const r of reports) for (const b of r.providers || []) {
+    if (b.same_as) continue
+    const u = b.usage || {}
+    const win = label => (u.windows || []).find(w => new RegExp(label, 'i').test(w.label || '') && w.used_percent != null)
+    const session = win('session|5h|hour'), weekly = win('week')
+    if (!session && !weekly && u.balance_usd == null) continue
+    out.push({ key: `${r.profile}/${b.provider}`, provider: b.provider, profile: r.profile,
+      session: session ? 100 - session.used_percent : null, weekly: weekly ? 100 - weekly.used_percent : null,
+      balance: u.balance_usd })
+  }
+  return out
+}
+
+function Gauge({ label, remaining }) {
+  if (remaining == null) return h('span', { className: 'w-24 text-right text-muted-foreground' }, `${label} —`)
+  return h('span', { className: 'flex w-24 items-center justify-end gap-1 tabular-nums' },
+    h('span', { className: 'text-[10px] text-muted-foreground' }, label),
+    h('span', { className: 'inline-block h-2.5 w-2.5 rounded-full', style: { background: hue(remaining) } }),
+    h('span', { className: 'font-semibold', style: { color: hue(remaining) } }, pct(remaining)))
+}
+
+function FocusStrip({ reports }) {
+  const rows = sourcesOf(reports)
+  if (!rows.length) return null
+  return h('div', { className: 'rounded-md border border-border/60 bg-muted/30 p-2 space-y-1' },
+    h('div', { className: 'flex text-[10px] uppercase tracking-wide text-muted-foreground' },
+      h('span', { className: 'flex-1' }, 'source'), h('span', { className: 'w-24 text-right' }, '5h left'), h('span', { className: 'w-24 text-right' }, 'week left')),
+    ...rows.map(s => h('div', { key: s.key, className: 'flex items-center text-xs' },
+      h('span', { className: 'flex-1 truncate' }, h('span', { className: 'font-medium' }, s.provider),
+        h('span', { className: 'text-muted-foreground' }, ` · ${s.profile}`)),
+      s.session == null && s.weekly == null
+        ? h('span', { className: 'w-48 text-right tabular-nums font-semibold', style: { color: hue(Math.min(100, s.balance * 10)) } }, `$${Number(s.balance).toFixed(2)}`)
+        : [h(Gauge, { key: 's', label: '5h', remaining: s.session }), h(Gauge, { key: 'w', label: 'wk', remaining: s.weekly })])))
+}
+
 function WindowBar({ w }) {
   if (w.used_percent == null) return h('div', { className: 'text-xs text-muted-foreground' }, w.label)
   const remaining = 100 - Number(w.used_percent)
@@ -112,6 +152,7 @@ function Pane() {
       h(Button, { size: 'sm', variant: 'ghost', disabled: state.loading, onClick: () => load(scope) }, state.loading ? '…' : '↻')),
     state.at ? h('div', { className: 'text-[11px] text-muted-foreground' }, `updated ${state.at.toLocaleTimeString()}`) : null,
     state.error ? h('div', { className: 'rounded border border-red-500/40 p-2 text-xs text-red-500' }, state.error) : null,
+    h(FocusStrip, { reports: state.reports }),
     alerts.length ? h('div', { className: 'rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs' },
       ...alerts.map((a, i) => h('div', { key: i }, '⚠ ', a))) : null,
     ...state.reports.map(r => h('div', { key: r.profile, className: 'space-y-1.5' },

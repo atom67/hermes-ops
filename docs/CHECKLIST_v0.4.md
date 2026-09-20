@@ -31,7 +31,9 @@ Operator (2026-09-20): «сторож тоже должен настраиват
 ### 2. Pane
 - [x] `same_as` line, bars/balance hidden for the duplicate, alerts skip it; `not fetchable` muted
 - [x] `node --check` ok; copied to profile and root `desktop-plugins/`
-- [ ] owner: Rescan / restart Desktop, confirm one Codex card with bars + a muted xai-oauth line
+- [x] owner screenshot 2026-09-20 14:19: one Codex card with bars (daria), mastermind says "same account as daria", xai-oauth muted
+- [x] focus strip on top (owner request): one row per deduped source, 5h and weekly % left coloured on a red->yellow->green hue, balance-only sources show the amount; details follow below
+- [ ] owner: Rescan, confirm the strip
 
 ### 3. Documents
 - [x] README, REQUIREMENTS FR-011/012, USE_CASES UC-008 + SET-003, REGRESSION R-10/12/13, KNOWN_ERRORS, BACKLOG
